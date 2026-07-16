@@ -1,0 +1,6 @@
+{
+  "name": "TECHNOVA - Loja de Tecnologia",
+  "description": "Sua loja online completa de tecnologia. Navegue por celulares, computadores e acessórios, faça buscas em tempo real e receba os dados de pedidos diretamente por e-mail.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
