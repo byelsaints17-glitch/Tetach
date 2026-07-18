@@ -342,14 +342,17 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-blue-600 p-2 rounded-lg text-white">
+              <button 
+                onClick={() => setActiveTab("inicio")} 
+                className="flex items-center gap-3 hover:opacity-95 transition-opacity cursor-pointer group text-left"
+              >
+                <div className="bg-blue-600 p-2 rounded-lg text-white group-hover:bg-blue-500 transition-colors">
                   <ShoppingCart className="w-5 h-5" />
                 </div>
-                <h3 className="text-xl font-black text-white tracking-tight">
+                <h3 className="text-xl font-black text-white tracking-tight group-hover:text-blue-400 transition-colors">
                   TECH<span className="text-blue-500">NOVA</span>
                 </h3>
-              </div>
+              </button>
               <p className="text-xs leading-relaxed font-medium">
                 Sua loja de tecnologia premium no Brasil. Levando a inovação, velocidade e o futuro até a porta da sua casa.
               </p>
@@ -399,6 +402,15 @@ export default function App() {
                 <li>
                   <button onClick={() => setActiveTab("termos")} className="hover:text-white transition-colors text-left">
                     Termos de Uso
+                  </button>
+                </li>
+                <li className="pt-2 border-t border-slate-800/40">
+                  <button 
+                    onClick={() => setActiveTab("admin")} 
+                    className="text-slate-600/50 hover:text-slate-400 transition-all text-left text-[10px] font-normal tracking-wide uppercase"
+                    title="Painel Administrativo"
+                  >
+                    Painel Administrativo
                   </button>
                 </li>
               </ul>

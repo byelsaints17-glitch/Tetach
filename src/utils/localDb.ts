@@ -2,25 +2,7 @@ import { Product, Order, UserAccount } from "../types";
 
 // Check if we are running in the AI Studio environment or local development
 export const isDevEnv = (): boolean => {
-  if (typeof window === "undefined") return false;
-  const hostname = window.location.hostname;
-  const search = window.location.search;
-  
-  // Also support persistent admin activation after accessing via url once
-  let hasLocalUnlock = false;
-  try {
-    hasLocalUnlock = localStorage.getItem("technova_admin_unlocked") === "true";
-  } catch (e) {
-    // ignore localstorage errors
-  }
-  
-  return (
-    hostname.includes("localhost") || 
-    hostname.includes("127.0.0.1") || 
-    hostname.includes("run.app") || 
-    search.toLowerCase().includes("admin=true") ||
-    hasLocalUnlock
-  );
+  return true; // Permanently visible/unlocked so the admin panel button is always available in any environment, including Vercel
 };
 
 // Default Products List matching server.ts

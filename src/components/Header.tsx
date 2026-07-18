@@ -56,14 +56,6 @@ export default function Header({ activeTab, setActiveTab, cartCount, onSearch, w
       {/* Top Banner/Promo */}
       <div className="bg-blue-600 text-xs text-center py-1.5 px-4 font-medium tracking-wide flex items-center justify-center gap-4">
         <span>⚡ FRETE GRÁTIS nas compras acima de R$ 200,00 • Parcelamento em até 12x sem juros!</span>
-        {showAdmin && (
-          <button 
-            onClick={() => setActiveTab("admin")} 
-            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded text-[10px] uppercase flex items-center gap-1 transition-colors ml-4"
-          >
-            <Settings className="w-3 h-3" /> Painel Admin
-          </button>
-        )}
       </div>
 
       {/* Main Header Row */}
@@ -148,22 +140,6 @@ export default function Header({ activeTab, setActiveTab, cartCount, onSearch, w
             <HelpCircle className="w-5 h-5 text-gray-400" />
             <span className="hidden lg:inline">Meus Pedidos</span>
           </button>
-
-          {/* Admin Panel Shortcut */}
-          {showAdmin && (
-            <button 
-              onClick={() => setActiveTab("admin")}
-              className={`p-2 px-3 rounded-xl transition-all hidden sm:flex items-center gap-1.5 text-xs font-black border ${
-                activeTab === "admin" 
-                  ? "bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/30" 
-                  : "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 hover:text-amber-300"
-              }`}
-              title="Painel Administrativo"
-            >
-              <Settings className="w-4 h-4 text-amber-500" />
-              <span>Painel Admin</span>
-            </button>
-          )}
 
           {/* Cart Icon */}
           <button 
@@ -325,20 +301,6 @@ export default function Header({ activeTab, setActiveTab, cartCount, onSearch, w
               </button>
             );
           })}
-          {showAdmin && (
-            <div className="border-t border-slate-800/80 my-2 pt-2">
-              <button
-                onClick={() => {
-                  setActiveTab("admin");
-                  setMobileMenuOpen(false);
-                }}
-                className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-left text-sm font-bold bg-amber-600/25 text-amber-400 border border-amber-500/30"
-              >
-                <Settings className="w-4 h-4" />
-                Painel Administrativo
-              </button>
-            </div>
-          )}
         </div>
       )}
     </header>
