@@ -84,3 +84,13 @@ export interface Order {
   trackingCode: string;
 }
 
+export interface UserAccount {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: "admin" | "cliente";
+  createdAt: string;
+}
+
+

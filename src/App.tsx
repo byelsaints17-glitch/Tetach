@@ -13,6 +13,7 @@ import ProductDetailModal from "./components/ProductDetailModal";
 import AdminDashboard from "./components/AdminDashboard";
 import CompanyInfoView from "./components/CompanyInfoView";
 import { ShieldCheck, Truck, RotateCcw, Calendar, ShoppingCart, Info, Check } from "lucide-react";
+import { filterLocalProducts } from "./utils/localDb";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("inicio");
@@ -27,6 +28,7 @@ export default function App() {
   // 1. Fetch initial products or perform query search
   const fetchProducts = async (query = "", category = "todos") => {
     setIsLoading(true);
+    let loaded = false;
     try {
       let url = `/api/products?category=${category}`;
       if (query) {
@@ -36,14 +38,19 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
+        loaded = true;
       } else {
         console.error("Failed to load products from server");
       }
     } catch (err) {
       console.error("Error fetching products:", err);
-    } finally {
-      setIsLoading(false);
     }
+
+    if (!loaded) {
+      console.warn("Fell back to local storage filtering");
+      setProducts(filterLocalProducts(query, category));
+    }
+    setIsLoading(false);
   };
 
   // Trigger loading products on mount and when query changes
@@ -114,6 +121,31 @@ export default function App() {
     setCart(newCart);
     localStorage.setItem("technova_cart", JSON.stringify(newCart));
   };
+
+  // Synchronize cart item prices with current products list when products change
+  useEffect(() => {
+    if (products.length === 0 || cart.length === 0) return;
+    
+    let cartUpdated = false;
+    const updatedCart = cart.map((item) => {
+      const currentProduct = products.find((p) => p.id === item.id);
+      if (currentProduct && (currentProduct.price !== item.price || currentProduct.name !== item.name || currentProduct.imageUrl !== item.imageUrl)) {
+        cartUpdated = true;
+        return {
+          ...item,
+          price: currentProduct.price,
+          name: currentProduct.name,
+          imageUrl: currentProduct.imageUrl,
+        };
+      }
+      return item;
+    });
+
+    if (cartUpdated) {
+      console.log("Synchronizing cart item prices with updated product database");
+      handleSetCart(updatedCart);
+    }
+  }, [products]);
 
   // Add to cart function
   const handleAddToCart = (product: Product) => {

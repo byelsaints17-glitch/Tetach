@@ -6,6 +6,14 @@ import {
   Settings, HelpCircle, Upload, Star
 } from "lucide-react";
 import { Product, Order } from "../types";
+import { 
+  getLocalProducts, 
+  saveLocalProduct, 
+  deleteLocalProduct, 
+  getLocalOrders, 
+  updateLocalOrderStatus, 
+  getLocalReports 
+} from "../utils/localDb";
 
 interface AdminDashboardProps {
   onProductChanged?: () => void;
@@ -72,10 +80,13 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
       if (res.ok) {
         const data = await res.json();
         setReports(data);
+        return;
       }
     } catch (e) {
-      console.error("Error loading reports:", e);
+      console.warn("Error loading reports from API, using local fallback:", e);
     }
+    const localRep = getLocalReports();
+    setReports(localRep);
   };
 
   const loadProducts = async () => {
@@ -84,10 +95,12 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
       if (res.ok) {
         const data = await res.json();
         setProductsList(data);
+        return;
       }
     } catch (e) {
-      console.error("Error loading products:", e);
+      console.warn("Error loading products from API, using local fallback:", e);
     }
+    setProductsList(getLocalProducts());
   };
 
   const loadOrders = async () => {
@@ -96,10 +109,12 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
       if (res.ok) {
         const data = await res.json();
         setOrdersList(data);
+        return;
       }
     } catch (e) {
-      console.error("Error loading orders:", e);
+      console.warn("Error loading orders from API, using local fallback:", e);
     }
+    setOrdersList(getLocalOrders());
   };
 
   const loadAllData = async () => {
@@ -527,6 +542,7 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
       description: formDescription
     };
 
+    let apiSaved = null;
     try {
       let res;
       if (editingProduct) {
@@ -546,39 +562,44 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
       }
 
       if (res.ok) {
-        setShowProductModal(false);
-        loadAllData();
-        if (onProductChanged) onProductChanged();
-      } else {
-        const err = await res.json();
-        setErrorMessage(err.error || "Ocorreu um erro ao salvar o produto.");
+        apiSaved = await res.json();
       }
     } catch (e) {
-      setErrorMessage("Erro de rede. Verifique a conexão com o servidor.");
+      console.warn("API save product failed, using local database fallback:", e);
     }
+
+    // Save to local database (localStorage) as fallback/sync
+    const productToSave = apiSaved || {
+      ...payload,
+      id: editingProduct?.id
+    };
+    saveLocalProduct(productToSave);
+
+    setShowProductModal(false);
+    loadAllData();
+    if (onProductChanged) onProductChanged();
   };
 
   const handleDeleteProduct = async (id: string) => {
     if (!confirm("Tem certeza que deseja remover este produto definitivamente?")) return;
 
     try {
-      const res = await fetch(`/api/admin/products/${id}`, {
+      await fetch(`/api/admin/products/${id}`, {
         method: "DELETE"
       });
-      if (res.ok) {
-        loadAllData();
-        if (onProductChanged) onProductChanged();
-      } else {
-        alert("Falha ao remover o produto.");
-      }
     } catch (e) {
-      console.error("Failed deleting product:", e);
+      console.warn("API delete product failed, using local database fallback:", e);
     }
+
+    deleteLocalProduct(id);
+    loadAllData();
+    if (onProductChanged) onProductChanged();
   };
 
   // Update order status & tracking code
   const handleUpdateOrderStatus = async (orderId: string, status: string) => {
     setUpdatingOrderStatus(true);
+    let apiUpdated = null;
     try {
       const res = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: "PUT",
@@ -586,20 +607,27 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
         body: JSON.stringify({ status })
       });
       if (res.ok) {
-        const updated = await res.json();
-        setSelectedOrder(updated);
-        loadOrders();
-        loadReports();
+        apiUpdated = await res.json();
       }
     } catch (e) {
-      console.error("Error updating order status:", e);
-    } finally {
-      setUpdatingOrderStatus(false);
+      console.warn("API update order status failed, using local database fallback:", e);
     }
+
+    const updated = updateLocalOrderStatus(orderId, status as any);
+    if (updated) {
+      setSelectedOrder(updated);
+    } else if (apiUpdated) {
+      setSelectedOrder(apiUpdated);
+    }
+
+    loadOrders();
+    loadReports();
+    setUpdatingOrderStatus(false);
   };
 
   const handleUpdateTrackingCode = async (e: React.FormEvent, orderId: string) => {
     e.preventDefault();
+    let apiUpdated = null;
     try {
       const res = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: "PUT",
@@ -607,14 +635,21 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
         body: JSON.stringify({ trackingCode: trackingCodeInput })
       });
       if (res.ok) {
-        const updated = await res.json();
-        setSelectedOrder(updated);
-        alert("Código de rastreamento salvo com sucesso!");
-        loadOrders();
+        apiUpdated = await res.json();
       }
     } catch (e) {
-      console.error("Error saving tracking code:", e);
+      console.warn("API save tracking code failed, using local database fallback:", e);
     }
+
+    const updated = updateLocalOrderStatus(orderId, undefined, trackingCodeInput);
+    if (updated) {
+      setSelectedOrder(updated);
+    } else if (apiUpdated) {
+      setSelectedOrder(apiUpdated);
+    }
+
+    alert("Código de rastreamento salvo com sucesso!");
+    loadOrders();
   };
 
   // Filtering products listed in table

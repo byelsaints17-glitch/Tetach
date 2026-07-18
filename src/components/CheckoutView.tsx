@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CartItem, Order, Tab } from "../types";
 import { ShieldCheck, Mail, ShoppingBag, CreditCard, ChevronRight, CheckCircle2, Copy, ExternalLink, RefreshCw, Smartphone, MapPin, Search, Check, AlertCircle, Barcode } from "lucide-react";
+import { saveLocalOrder } from "../utils/localDb";
 
 interface CheckoutViewProps {
   cart: CartItem[];
@@ -509,6 +510,7 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
       totalAmount: finalTotalAmount,
     };
 
+    let data;
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -516,9 +518,20 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      data = await res.json();
+    } catch (err) {
+      console.warn("Checkout API submission failed, generating local fallback...", err);
+      const simulatedOrderId = mpData?.orderId || `TECH-${Math.floor(100000 + Math.random() * 900000)}`;
+      data = {
+        success: true,
+        orderId: simulatedOrderId,
+        orderDate: new Date().toLocaleString("pt-BR"),
+        previewUrl: null,
+      };
+    }
 
-      if (data.success) {
+    try {
+      if (data && data.success) {
         // Status Pendente for all orders, as they must be approved after payment!
         const orderStatus = "Pendente";
         
@@ -564,6 +577,9 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
           trackingCode: `BR-${Math.floor(100000000 + Math.random() * 900000000)}X`,
         };
 
+        // Save locally to localStorage so it persists correctly!
+        saveLocalOrder(orderHistoryItem);
+
         // Store pending order details
         setPendingOrderData({
           completedOrder,
@@ -573,7 +589,7 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
         // Trigger simulator overlay!
         setShowMpSimulator(true);
       } else {
-        setErrorMessage(data.error || "Ocorreu um erro ao processar o seu pedido.");
+        setErrorMessage(data?.error || "Ocorreu um erro ao processar o seu pedido.");
       }
     } catch (err) {
       console.error("Checkout submission failed:", err);

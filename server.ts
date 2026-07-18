@@ -38,6 +38,34 @@ if (geminiApiKey && geminiApiKey !== "MY_GEMINI_API_KEY") {
 // PRODUCT DATABASE & TYPES
 // ----------------------------------------------------
 
+interface UserAccount {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: "admin" | "cliente";
+  createdAt: string;
+}
+
+let usersDb: UserAccount[] = [
+  {
+    id: "user-admin",
+    name: "Administrador TECHNOVA",
+    email: "byelsaints17@gmail.com",
+    password: "admin",
+    role: "admin",
+    createdAt: "17/07/2026 10:00:00"
+  },
+  {
+    id: "user-democliente",
+    name: "Marcos Silva",
+    email: "marcynhosilva25@gmail.com",
+    password: "user123",
+    role: "cliente",
+    createdAt: "17/07/2026 12:30:00"
+  }
+];
+
 interface Product {
   id: string;
   name: string;
@@ -626,6 +654,96 @@ app.delete("/api/admin/products/:id", (req, res) => {
   return res.json({ success: true, deleted: deleted[0] });
 });
 
+// ----------------------------------------------------
+// USER ACCOUNTS / CREATORS API
+// ----------------------------------------------------
+
+// POST Register user account
+app.post("/api/auth/register", (req, res) => {
+  const { name, email, password, role } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: "Preencha todos os campos obrigatórios (nome, email e senha)." });
+  }
+
+  // Check if user already exists
+  const exists = usersDb.find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (exists) {
+    return res.status(400).json({ error: "Este endereço de e-mail já está sendo utilizado por outra conta." });
+  }
+
+  const newUser: UserAccount = {
+    id: `user-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    name,
+    email,
+    password,
+    role: role === "admin" ? "admin" : "cliente",
+    createdAt: new Date().toLocaleString("pt-BR")
+  };
+
+  usersDb.push(newUser);
+  console.log(`New user registered successfully: ${newUser.name} (${newUser.email})`);
+  return res.status(201).json({ success: true, user: { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role, createdAt: newUser.createdAt } });
+});
+
+// POST Login user account
+app.post("/api/auth/login", (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "E-mail e senha são obrigatórios para realizar o login." });
+  }
+
+  const user = usersDb.find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (!user || user.password !== password) {
+    return res.status(401).json({ error: "E-mail ou senha incorretos. Por favor, tente novamente." });
+  }
+
+  console.log(`User logged in successfully: ${user.name} (${user.email})`);
+  return res.json({
+    success: true,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt
+    }
+  });
+});
+
+// GET all user accounts (Admin)
+app.get("/api/admin/users", (req, res) => {
+  // Returns safe user representations (without returning passwords)
+  const safeUsers = usersDb.map(u => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    createdAt: u.createdAt
+  }));
+  return res.json(safeUsers);
+});
+
+// DELETE user account (Admin)
+app.delete("/api/admin/users/:id", (req, res) => {
+  const { id } = req.params;
+  const index = usersDb.findIndex(u => u.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ error: "Conta de usuário não encontrada." });
+  }
+
+  // Prevent deleting the main admin account to avoid lockout
+  if (id === "user-admin") {
+    return res.status(403).json({ error: "Não é permitido excluir a conta de administrador padrão." });
+  }
+
+  const deleted = usersDb.splice(index, 1);
+  console.log(`User deleted successfully: ${deleted[0].name} (${deleted[0].email})`);
+  return res.json({ success: true, deleted: { id: deleted[0].id, name: deleted[0].name, email: deleted[0].email } });
+});
+
 // GET all orders
 app.get("/api/admin/orders", (req, res) => {
   return res.json(ordersDb);
@@ -1176,10 +1294,23 @@ app.post("/api/mercadopago/preference", async (req, res) => {
     });
   }
 
-  const cartSubtotal = cart.reduce((sum: number, item: any) => sum + (Number(item.price) * (Number(item.quantity) || 1)), 0);
+  // Sync cart item prices with latest prices in the server database (productsDb) to ensure absolute alignment
+  const syncedCart = cart.map((item: any) => {
+    const matchedProduct = productsDb.find(p => p.id === item.id);
+    if (matchedProduct) {
+      return {
+        ...item,
+        price: matchedProduct.price,
+        name: matchedProduct.name
+      };
+    }
+    return item;
+  });
+
+  const cartSubtotal = syncedCart.reduce((sum: number, item: any) => sum + (Number(item.price) * (Number(item.quantity) || 1)), 0);
   const factor = cartSubtotal > 0 ? (Number(totalAmount) / cartSubtotal) : 1;
 
-  const mpItems = cart.map((item: any) => {
+  const mpItems = syncedCart.map((item: any) => {
     const qty = Number(item.quantity) || 1;
     const rawPrice = Number(item.price) * factor;
     return {
