@@ -349,7 +349,7 @@ export const getLocalProducts = (): Product[] => {
   }
   try {
     const parsed = JSON.parse(stored);
-    if (parsed.length < DEFAULT_PRODUCTS.length) {
+    if (!Array.isArray(parsed)) {
       localStorage.setItem("technova_products_db", JSON.stringify(DEFAULT_PRODUCTS));
       return DEFAULT_PRODUCTS;
     }

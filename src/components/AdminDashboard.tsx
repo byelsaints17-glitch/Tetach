@@ -101,17 +101,21 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
   };
 
   const loadProducts = async () => {
+    // Prioritize localStorage as source of truth for seamless product management
+    const local = getLocalProducts();
+    setProductsList(local);
     try {
       const res = await fetch("/api/admin/products");
       if (res.ok) {
         const data = await res.json();
-        setProductsList(data);
-        return;
+        // Only override if local list is empty and server has items (initial run)
+        if (local.length === 0 && data.length > 0) {
+          setProductsList(data);
+        }
       }
     } catch (e) {
-      console.warn("Error loading products from API, using local fallback:", e);
+      console.warn("Error loading products from API:", e);
     }
-    setProductsList(getLocalProducts());
   };
 
   const loadOrders = async () => {
@@ -220,8 +224,8 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
     setFormOriginalPrice("");
     setFormStock("");
     setFormWarranty("1 Ano de Garantia Oficial");
-    setFormImageUrl("https://images.unsplash.com/photo-1546054454-aa26e2b734c7?w=600");
-    setFormImages(["https://images.unsplash.com/photo-1546054454-aa26e2b734c7?w=600"]);
+    setFormImageUrl("");
+    setFormImages([]);
     setGalleryUrlInput("");
     setFormSpecs("Processador de última geração\nTela AMOLED de alta definição\nBateria de longa duração");
     setFormDescription("Dispositivo premium de alta performance projetado para oferecer a melhor experiência.");
@@ -616,6 +620,11 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
 
     const finalImageUrl = formImageUrl || (formImages.length > 0 ? formImages[0] : "");
     const finalImages = formImages.length > 0 ? formImages : (finalImageUrl ? [finalImageUrl] : []);
+
+    if (finalImages.length === 0) {
+      setErrorMessage("Por favor, carregue ou adicione pelo menos uma foto para o produto na galeria.");
+      return;
+    }
 
     const payload = {
       name: formName,

@@ -28,26 +28,37 @@ export default function App() {
   // 1. Fetch initial products or perform query search
   const fetchProducts = async (query = "", category = "todos") => {
     setIsLoading(true);
+
+    // If there is no search query, always use the local storage database as the absolute source of truth
+    // so any edits, additions, and deletions made by the administrator persist 100% reliably.
+    if (!query) {
+      setProducts(filterLocalProducts("", category));
+      setIsLoading(false);
+      return;
+    }
+
+    // If there is a search query, fetch from the server to leverage the backend's Gemini grounding/search
     let loaded = false;
     try {
-      let url = `/api/products?category=${category}`;
-      if (query) {
-        url += `&q=${encodeURIComponent(query)}`;
-      }
+      const url = `/api/products?category=${category}&q=${encodeURIComponent(query)}`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
-        setProducts(data);
+        const localMatches = filterLocalProducts(query, category);
+        const combined = [...localMatches];
+        data.forEach((serverProd: Product) => {
+          if (!combined.some(p => p.name.toLowerCase() === serverProd.name.toLowerCase() || p.id === serverProd.id)) {
+            combined.push(serverProd);
+          }
+        });
+        setProducts(combined);
         loaded = true;
-      } else {
-        console.error("Failed to load products from server");
       }
     } catch (err) {
       console.error("Error fetching products:", err);
     }
 
     if (!loaded) {
-      console.warn("Fell back to local storage filtering");
       setProducts(filterLocalProducts(query, category));
     }
     setIsLoading(false);
@@ -59,7 +70,7 @@ export default function App() {
     const isProductCategory = [
       "inicio", "celulares", "notebooks", "computadores", "tablets", 
       "monitores", "impressoras", "tvs", "smartwatches", "fones", 
-      "perifericos", "pecas", "gamer", "ofertas", "lancamentos"
+      "perifericos", "pecas", "gamer", "bicicletas", "ofertas", "lancamentos"
     ].includes(activeTab);
 
     const categoryParam = isProductCategory 
