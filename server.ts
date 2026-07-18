@@ -50,18 +50,18 @@ interface UserAccount {
 let usersDb: UserAccount[] = [
   {
     id: "user-admin",
-    name: "Administrador TECHNOVA",
+    name: "Gabriel Santos (Admin)",
     email: "byelsaints17@gmail.com",
-    password: "admin",
+    password: "Pg87456123!",
     role: "admin",
     createdAt: "17/07/2026 10:00:00"
   },
   {
     id: "user-democliente",
-    name: "Marcos Silva",
+    name: "Marcos Silva (Admin)",
     email: "marcynhosilva25@gmail.com",
-    password: "user123",
-    role: "cliente",
+    password: "admin",
+    role: "admin",
     createdAt: "17/07/2026 12:30:00"
   }
 ];

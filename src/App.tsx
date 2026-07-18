@@ -99,6 +99,21 @@ export default function App() {
     }
   }, []);
 
+  // Check URL parameters on mount to activate administrative panel if ?admin=true is present
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const search = window.location.search.toLowerCase();
+      if (search.includes("admin=true")) {
+        try {
+          localStorage.setItem("technova_admin_unlocked", "true");
+        } catch (e) {
+          console.error("Failed to write to localStorage", e);
+        }
+        setActiveTab("admin");
+      }
+    }
+  }, []);
+
   // Scroll to top smoothly on page/tab changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });

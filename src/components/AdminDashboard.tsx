@@ -3,7 +3,7 @@ import {
   TrendingUp, ShoppingBag, Clock, DollarSign, AlertTriangle, Plus, 
   Edit2, Trash2, Check, RefreshCw, ChevronRight, Package, Truck, 
   MapPin, User, ArrowLeft, Search, Filter, Sparkles, Image, Key, 
-  Settings, HelpCircle, Upload, Star
+  Settings, HelpCircle, Upload, Star, Lock, Eye, EyeOff, Shield
 } from "lucide-react";
 import { Product, Order } from "../types";
 import { 
@@ -12,7 +12,10 @@ import {
   deleteLocalProduct, 
   getLocalOrders, 
   updateLocalOrderStatus, 
-  getLocalReports 
+  getLocalReports,
+  getLocalCurrentUser,
+  setLocalCurrentUser,
+  getLocalUsers
 } from "../utils/localDb";
 
 interface AdminDashboardProps {
@@ -20,6 +23,14 @@ interface AdminDashboardProps {
 }
 
 export default function AdminDashboard({ onProductChanged }: AdminDashboardProps) {
+  // Admin Authorization Gate State
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminError, setAdminError] = useState("");
+  const [showAdminPass, setShowAdminPass] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+
   const [activeSubTab, setActiveSubTab] = useState<"reports" | "products" | "orders">("reports");
   const [reports, setReports] = useState<any>(null);
   const [productsList, setProductsList] = useState<Product[]>([]);
@@ -124,8 +135,73 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
   };
 
   useEffect(() => {
-    loadAllData();
+    const user = getLocalCurrentUser();
+    if (user && user.role === "admin") {
+      setIsAdmin(true);
+      loadAllData();
+    } else {
+      setIsAdmin(false);
+    }
   }, []);
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminError("");
+    setIsAuthLoading(true);
+
+    let apiLoggedInUser = null;
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: adminEmail, password: adminPassword })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        apiLoggedInUser = data.user;
+      } else if (res.status === 401 || res.status === 400) {
+        const err = await res.json();
+        setAdminError(err.error || "E-mail ou senha incorretos.");
+        setIsAuthLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.warn("API login failed, logging in via localStorage fallback.", err);
+    }
+
+    if (apiLoggedInUser && apiLoggedInUser.role === "admin") {
+      setLocalCurrentUser(apiLoggedInUser);
+      setIsAdmin(true);
+      setIsLoading(true);
+      await Promise.all([loadReports(), loadProducts(), loadOrders()]);
+      setIsLoading(false);
+    } else if (apiLoggedInUser && apiLoggedInUser.role !== "admin") {
+      setAdminError("Esta conta não possui perfil de Administrador.");
+    } else {
+      // Local database check fallback
+      const localUsers = getLocalUsers();
+      const matched = localUsers.find(
+        u => u.email.toLowerCase() === adminEmail.toLowerCase().trim() && u.password === adminPassword
+      );
+
+      if (matched) {
+        if (matched.role === "admin") {
+          setLocalCurrentUser(matched);
+          setIsAdmin(true);
+          setIsLoading(true);
+          await Promise.all([loadReports(), loadProducts(), loadOrders()]);
+          setIsLoading(false);
+        } else {
+          setAdminError("Esta conta não possui perfil de Administrador.");
+        }
+      } else {
+        setAdminError("E-mail ou senha incorretos. Por favor, tente novamente.");
+      }
+    }
+
+    setIsAuthLoading(false);
+  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -660,6 +736,78 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
     const matchesCategory = prodCatFilter === "todos" || p.category === prodCatFilter;
     return matchesSearch && matchesCategory;
   });
+
+  if (!isAdmin) {
+    return (
+      <div className="max-w-md mx-auto bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl relative overflow-hidden my-8">
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600"></div>
+        
+        <div className="text-center mb-6 space-y-2">
+          <div className="w-14 h-14 bg-blue-600/10 border border-blue-500/20 text-blue-500 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+            <Lock className="w-6 h-6" />
+          </div>
+          <h3 className="text-xl font-extrabold text-white">Painel Administrativo</h3>
+          <p className="text-xs text-gray-400">
+            Acesso restrito para administradores do sistema. Por favor, autentique-se abaixo.
+          </p>
+        </div>
+
+        <form onSubmit={handleAdminLogin} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">E-mail de Login</label>
+            <div className="relative">
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <input
+                type="email"
+                required
+                placeholder="administrador@technova.com"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 focus:outline-none p-3 pl-10 rounded-xl text-white text-xs font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Senha</label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <input
+                type={showAdminPass ? "text" : "password"}
+                required
+                placeholder="••••••••"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 focus:outline-none p-3 pl-10 pr-10 rounded-xl text-white text-xs font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => setShowAdminPass(!showAdminPass)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+              >
+                {showAdminPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {adminError && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3.5 rounded-xl text-xs flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-red-500" />
+              <span>{adminError}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isAuthLoading}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold py-3.5 px-4 rounded-xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25 disabled:opacity-50"
+          >
+            {isAuthLoading ? "Verificando Credenciais..." : "Acessar Painel"}
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

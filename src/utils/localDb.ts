@@ -6,11 +6,20 @@ export const isDevEnv = (): boolean => {
   const hostname = window.location.hostname;
   const search = window.location.search;
   
+  // Also support persistent admin activation after accessing via url once
+  let hasLocalUnlock = false;
+  try {
+    hasLocalUnlock = localStorage.getItem("technova_admin_unlocked") === "true";
+  } catch (e) {
+    // ignore localstorage errors
+  }
+  
   return (
     hostname.includes("localhost") || 
     hostname.includes("127.0.0.1") || 
     hostname.includes("run.app") || 
-    search.includes("admin=true")
+    search.toLowerCase().includes("admin=true") ||
+    hasLocalUnlock
   );
 };
 
@@ -474,18 +483,18 @@ export const getLocalReports = () => {
 const DEFAULT_USERS: UserAccount[] = [
   {
     id: "user-admin",
-    name: "Administrador TECHNOVA",
+    name: "Gabriel Santos (Admin)",
     email: "byelsaints17@gmail.com",
-    password: "admin",
+    password: "Pg87456123!",
     role: "admin",
     createdAt: "17/07/2026 10:00:00"
   },
   {
     id: "user-democliente",
-    name: "Marcos Silva",
+    name: "Marcos Silva (Admin)",
     email: "marcynhosilva25@gmail.com",
-    password: "user123",
-    role: "cliente",
+    password: "admin",
+    role: "admin",
     createdAt: "17/07/2026 12:30:00"
   }
 ];
@@ -498,7 +507,32 @@ export const getLocalUsers = (): UserAccount[] => {
     return DEFAULT_USERS;
   }
   try {
-    return JSON.parse(stored);
+    const parsed: UserAccount[] = JSON.parse(stored);
+    let modified = false;
+    
+    // Automatically configure Marcos's account as admin
+    const marcos = parsed.find(u => u.email.toLowerCase() === "marcynhosilva25@gmail.com");
+    if (marcos && (marcos.role !== "admin" || marcos.password !== "admin")) {
+      marcos.role = "admin";
+      marcos.password = "admin";
+      marcos.name = "Marcos Silva (Admin)";
+      modified = true;
+    }
+    
+    // Automatically configure Gabriel's account as Admin with password Pg87456123!
+    const gabriel = parsed.find(u => u.email.toLowerCase() === "byelsaints17@gmail.com");
+    if (gabriel && (gabriel.role !== "admin" || gabriel.password !== "Pg87456123!")) {
+      gabriel.role = "admin";
+      gabriel.password = "Pg87456123!";
+      gabriel.name = "Gabriel Santos (Admin)";
+      modified = true;
+    }
+
+    if (modified) {
+      localStorage.setItem("technova_users_db", JSON.stringify(parsed));
+    }
+    
+    return parsed;
   } catch (e) {
     console.error("Failed to parse local users, resetting to default", e);
     localStorage.setItem("technova_users_db", JSON.stringify(DEFAULT_USERS));
