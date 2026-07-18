@@ -3,7 +3,7 @@ import { Tab, Product } from "../types";
 import { 
   Filter, Search, ArrowUpDown, Smartphone, Laptop, Headphones, 
   Percent, Sparkles, SlidersHorizontal, AlertCircle, Cpu, Watch, 
-  Monitor, Printer, Tv, Keyboard, Gamepad2 
+  Monitor, Printer, Tv, Keyboard, Gamepad2, Bike
 } from "lucide-react";
 import ProductCard from "./ProductCard";
 
@@ -103,6 +103,12 @@ export default function CategoryView({
           title: "Espaço Gamer",
           desc: "Consoles de última geração, acessórios otimizados, cadeiras ergonômicas e setups gamers imbatíveis.",
           icon: Gamepad2,
+        };
+      case "bicicletas":
+        return {
+          title: "Bicicletas e Mobilidade",
+          desc: "Encontre bicicletas elétricas, mountain bikes, urbanas e acessórios de mobilidade de alta tecnologia para o seu dia a dia.",
+          icon: Bike,
         };
       case "ofertas":
         return {

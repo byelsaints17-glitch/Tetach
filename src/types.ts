@@ -12,6 +12,7 @@ export type Tab =
   | "perifericos"
   | "pecas"
   | "gamer"
+  | "bicicletas"
   | "ofertas"
   | "lancamentos"
   | "marcas"

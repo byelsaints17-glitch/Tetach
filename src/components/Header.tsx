@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { 
   Search, ShoppingCart, User, Menu, X, Laptop, Smartphone, Headphones, 
   Percent, Sparkles, PhoneCall, HelpCircle, Heart, Settings, Monitor, 
-  Printer, Tv, Watch, Keyboard, Cpu, Gamepad2, Tag, Info, ShieldAlert
+  Printer, Tv, Watch, Keyboard, Cpu, Gamepad2, Tag, Info, ShieldAlert, Bike
 } from "lucide-react";
 import { Tab } from "../types";
 import { isDevEnv } from "../utils/localDb";
@@ -39,6 +39,7 @@ export default function Header({ activeTab, setActiveTab, cartCount, onSearch, w
     { id: "perifericos" as Tab, label: "Periféricos", icon: Keyboard },
     { id: "pecas" as Tab, label: "Peças", icon: Cpu },
     { id: "gamer" as Tab, label: "Gamer", icon: Gamepad2 },
+    { id: "bicicletas" as Tab, label: "Bicicletas", icon: Bike },
   ];
 
   const secondaryNav = [
@@ -62,7 +63,10 @@ export default function Header({ activeTab, setActiveTab, cartCount, onSearch, w
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
         {/* Logo */}
         <div 
-          onClick={() => setActiveTab("inicio")} 
+          onClick={() => {
+            setActiveTab("inicio");
+            setMobileMenuOpen(false);
+          }} 
           className="flex items-center gap-3 cursor-pointer select-none group shrink-0"
         >
           <div className="bg-blue-600 p-2.5 rounded-lg text-white group-hover:bg-blue-500 transition-all">
@@ -236,7 +240,54 @@ export default function Header({ activeTab, setActiveTab, cartCount, onSearch, w
       {/* Mobile Menu (Drawer/Overlay) */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-slate-950 border-t border-slate-800 px-4 py-3 space-y-2 max-h-[80vh] overflow-y-auto">
-          <div className="text-gray-500 text-[10px] uppercase font-bold tracking-wider px-2 pt-1 pb-1">Navegação</div>
+          {/* Quick Access Grid for Mobile Profile & Wishlist */}
+          <div className="text-gray-500 text-[10px] uppercase font-bold tracking-wider px-2 pt-1 pb-1">Sua Conta</div>
+          <div className="grid grid-cols-2 gap-2 pb-2">
+            <button
+              onClick={() => {
+                setActiveTab("conta");
+                setMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-2 justify-center px-3 py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                activeTab === "conta"
+                  ? "bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/10"
+                  : "bg-slate-900 text-gray-300 border-slate-800 hover:text-white"
+              }`}
+            >
+              <User className="w-4 h-4 text-blue-400" />
+              <span>Meu Perfil</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("desejos");
+                setMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-2 justify-center px-3 py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                activeTab === "desejos"
+                  ? "bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/10"
+                  : "bg-slate-900 text-gray-300 border-slate-800 hover:text-white"
+              }`}
+            >
+              <Heart className="w-4 h-4 text-red-400" />
+              <span>Favoritos</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("pedidos");
+                setMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-2 justify-center px-3 py-2.5 rounded-xl text-xs font-bold transition-all border col-span-2 ${
+                activeTab === "pedidos"
+                  ? "bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/10"
+                  : "bg-slate-900 text-gray-300 border-slate-800 hover:text-white"
+              }`}
+            >
+              <HelpCircle className="w-4 h-4 text-amber-400" />
+              <span>Rastrear Meus Pedidos</span>
+            </button>
+          </div>
+
+          <div className="text-gray-500 text-[10px] uppercase font-bold tracking-wider px-2 pt-2 border-t border-slate-900">Navegação</div>
           {secondaryNav.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;

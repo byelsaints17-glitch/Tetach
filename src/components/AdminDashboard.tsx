@@ -269,6 +269,7 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
   // Helper mappings for external product APIs
   const mapDummyJsonCategory = (cat: string): string => {
     const c = (cat || "").toLowerCase();
+    if (c.includes("bike") || c.includes("bicycle") || c.includes("moto") || c.includes("scooter")) return "bicicletas";
     if (c.includes("phone") || c.includes("mobile")) return "celulares";
     if (c.includes("laptop") || c.includes("computer") || c.includes("pc")) return "notebooks";
     if (c.includes("tablet") || c.includes("ipad")) return "tablets";
@@ -291,6 +292,7 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
 
   const mapMercadoLivreCategory = (title: string): string => {
     const t = title.toLowerCase();
+    if (t.includes("bicicleta") || t.includes("bike") || t.includes("ciclismo") || t.includes("patinete")) return "bicicletas";
     if (t.includes("celular") || t.includes("smartphone") || t.includes("iphone")) return "celulares";
     if (t.includes("notebook") || t.includes("laptop") || t.includes("macbook") || t.includes("dell")) return "notebooks";
     if (t.includes("computador") || t.includes("pc gamer") || t.includes("desktop")) return "computadores";
@@ -555,6 +557,10 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (formImages.length >= 5) {
+      alert("Limite máximo de 5 fotos por produto atingido!");
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -567,6 +573,10 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
     reader.onloadend = () => {
       const base64String = reader.result as string;
       setFormImages(prev => {
+        if (prev.length >= 5) {
+          alert("Limite máximo de 5 fotos por produto atingido!");
+          return prev;
+        }
         const updated = [...prev, base64String];
         if (!formImageUrl || formImageUrl.startsWith("https://images.unsplash.com/photo-1546054454-aa26e2b734c7")) {
           setFormImageUrl(base64String);
@@ -583,6 +593,10 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
   const handleAddImageFromSearch = (url: string) => {
     setFormImages(prev => {
       if (prev.includes(url)) return prev;
+      if (prev.length >= 5) {
+        alert("Limite máximo de 5 fotos por produto atingido!");
+        return prev;
+      }
       return [...prev, url];
     });
     setFormImageUrl(prev => {
@@ -1007,6 +1021,7 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
                 <option value="perifericos">Periféricos</option>
                 <option value="pecas">Peças</option>
                 <option value="gamer">Gamer</option>
+                <option value="bicicletas">Bicicletas</option>
               </select>
             </div>
 
@@ -1286,8 +1301,8 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
 
       {/* CRUD MODAL: ADD / EDIT PRODUCT */}
       {showProductModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl p-6 shadow-2xl relative my-8">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/95 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl p-5 sm:p-6 shadow-2xl relative my-auto sm:my-8">
             <h3 className="text-lg font-black text-white tracking-tight mb-4 flex items-center gap-2">
               <Package className="w-5 h-5 text-blue-500" />
               {editingProduct ? `Editar Produto: ${editingProduct.name}` : "Adicionar Novo Produto ao Catálogo"}
@@ -1575,6 +1590,7 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
                     <option value="perifericos">Periféricos</option>
                     <option value="pecas">Peças</option>
                     <option value="gamer">Gamer</option>
+                    <option value="bicicletas">Bicicletas</option>
                   </select>
                 </div>
 
@@ -1655,7 +1671,7 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="text-gray-400 font-bold block">Galeria de Imagens do Produto</label>
-                    <span className="text-[10px] text-blue-400 font-semibold">Sem limite de fotos! ({formImages.length} adicionadas)</span>
+                    <span className="text-[10px] text-blue-400 font-semibold">Máximo de 5 fotos! ({formImages.length}/5 adicionadas)</span>
                   </div>
                   <button
                     type="button"
@@ -1686,7 +1702,7 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
                     <Upload className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
                     <div>
                       <p className="text-[10px] font-bold text-gray-300 group-hover:text-white">Carregar do Dispositivo</p>
-                      <p className="text-[9px] text-gray-500">Selecione fotos da galeria (Sem limites!)</p>
+                      <p className="text-[9px] text-gray-500">Selecione fotos da galeria (Máximo 5)</p>
                     </div>
                   </div>
 
@@ -1705,6 +1721,10 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
                         type="button"
                         onClick={() => {
                           if (galleryUrlInput.trim()) {
+                            if (formImages.length >= 5) {
+                              alert("Limite máximo de 5 fotos por produto atingido!");
+                              return;
+                            }
                             setFormImages(prev => {
                               if (prev.includes(galleryUrlInput.trim())) return prev;
                               return [...prev, galleryUrlInput.trim()];

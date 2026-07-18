@@ -68,10 +68,19 @@ export default function ProductCard({
           {/* Category */}
           <span className="text-[10px] uppercase font-bold text-blue-500 tracking-wider">
             {product.category === "celulares" && "Smartphone / Celular"}
-            {product.category === "computadores" && "Computador / Notebook"}
-            {product.category === "acessorios" && "Acessório / Periférico"}
-            {product.category === "ofertas" && "Oferta Especial"}
-            {product.category === "lancamentos" && "Lançamento"}
+            {product.category === "computadores" && "Computador"}
+            {product.category === "notebooks" && "Notebook"}
+            {product.category === "tablets" && "Tablet"}
+            {product.category === "monitores" && "Monitor"}
+            {product.category === "impressoras" && "Impressora"}
+            {product.category === "tvs" && "Smart TV"}
+            {product.category === "smartwatches" && "Smartwatch"}
+            {product.category === "fones" && "Áudio / Fone"}
+            {product.category === "perifericos" && "Periférico"}
+            {product.category === "pecas" && "Peças / Componentes"}
+            {product.category === "gamer" && "Espaço Gamer"}
+            {product.category === "bicicletas" && "Bicicleta & Mobilidade"}
+            {!["celulares", "computadores", "notebooks", "tablets", "monitores", "impressoras", "tvs", "smartwatches", "fones", "perifericos", "pecas", "gamer", "bicicletas"].includes(product.category) && product.category}
           </span>
 
           {/* Title */}

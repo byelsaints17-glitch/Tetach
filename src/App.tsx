@@ -244,6 +244,7 @@ export default function App() {
         activeTab === "perifericos" ||
         activeTab === "pecas" ||
         activeTab === "gamer" ||
+        activeTab === "bicicletas" ||
         activeTab === "ofertas" ||
         activeTab === "lancamentos") && <BenefitsBar />}
 
@@ -264,7 +265,7 @@ export default function App() {
         {[
           "celulares", "notebooks", "computadores", "tablets", "monitores", 
           "impressoras", "tvs", "smartwatches", "fones", "perifericos", 
-          "pecas", "gamer", "ofertas", "lancamentos"
+          "pecas", "gamer", "bicicletas", "ofertas", "lancamentos"
         ].includes(activeTab) && (
           <CategoryView
             products={products}
@@ -419,8 +420,8 @@ export default function App() {
             <div>
               <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Suporte</h4>
               <ul className="space-y-2 text-xs">
-                <li>Email de Notificação Lojista:</li>
-                <li className="font-bold text-white font-mono break-all text-[11px] pb-1">byelsaints17@gmail.com</li>
+                <li>Central de Relacionamento:</li>
+                <li className="font-bold text-white font-mono break-all text-[11px] pb-1">suporte@technova.com.br</li>
                 <li>
                   <button onClick={() => setActiveTab("contato")} className="text-blue-500 hover:underline text-left">
                     Fale com nosso Atendimento

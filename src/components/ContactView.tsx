@@ -47,7 +47,7 @@ export default function ContactView() {
       icon: Mail,
       title: "E-mail Oficial",
       desc: "suporte@technova.com.br",
-      sub: "Cópia para: byelsaints17@gmail.com",
+      sub: "Atendimento de Segunda a Sexta",
     },
     {
       icon: MapPin,
@@ -106,7 +106,7 @@ export default function ContactView() {
               <div>
                 <h4 className="font-extrabold text-white text-lg">Mensagem enviada com sucesso!</h4>
                 <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
-                  Agradecemos seu contato. Uma cópia dessa mensagem de suporte foi encaminhada com sucesso ao e-mail principal <strong className="text-white">byelsaints17@gmail.com</strong>. Responderemos em até 24 horas úteis!
+                  Agradecemos seu contato. Uma cópia dessa mensagem de suporte foi encaminhada com sucesso ao nosso setor de atendimento. Responderemos em até 24 horas úteis!
                 </p>
               </div>
               <button

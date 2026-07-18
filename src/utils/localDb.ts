@@ -231,6 +231,111 @@ const DEFAULT_PRODUCTS: Product[] = [
     imageUrl: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=500&q=80",
     stock: 3,
     warranty: "1 ano de montagem e suporte técnico"
+  },
+  {
+    id: "bike-electric-evolt",
+    name: "Bicicleta Elétrica TECHNOVA E-Volt X",
+    brand: "TECHNOVA",
+    model: "E-Volt X-200",
+    description: "Bicicleta elétrica inteligente de última geração com bateria integrada de longa duração, painel digital em LED, freios a disco hidráulicos e autonomia de até 60km por carga assistida.",
+    price: 4899.00,
+    originalPrice: 6999.00,
+    category: "bicicletas",
+    specs: ["Motor: 350W Hub Motor traseiro", "Bateria: Lítio-Ion 36V 10.4Ah integrada", "Autonomia: Até 60 km no modo assistido", "Velocidade Máxima: 25 km/h", "Painel LCD multifunções com porta USB", "Quadro em Alumínio de alta resistência"],
+    rating: 4.8,
+    imageUrl: "https://images.unsplash.com/photo-1571068316341-2501006fa4ee?w=500&q=80",
+    stock: 7,
+    warranty: "1 ano com o fabricante"
+  },
+  {
+    id: "bike-specialized-mtb",
+    name: "Mountain Bike Specialized Rockhopper Elite 29",
+    brand: "Specialized",
+    model: "Rockhopper Elite",
+    description: "Ideal para trilhas técnicas e aventuras fora da estrada. Equipada com suspensão dianteira RockShox, transmissão Shimano Deore de 11 marchas e freios hidráulicos potentes.",
+    price: 6200.00,
+    originalPrice: 8500.00,
+    category: "bicicletas",
+    specs: ["Transmissão: Shimano Deore M5100 11v", "Suspensão: RockShox Judy Solo Air (100mm)", "Freios: Disco Hidráulico Shimano MT200", "Aros: Double-wall alloy tubeless-ready", "Quadro: Alumínio Premium A1 butted"],
+    rating: 4.9,
+    imageUrl: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=500&q=80",
+    stock: 5,
+    warranty: "Garantia Vitalícia para o quadro"
+  },
+  {
+    id: "bike-cannondale-quick",
+    name: "Bicicleta Urbana Cannondale Quick 5",
+    brand: "Cannondale",
+    model: "Quick 5",
+    description: "Uma bicicleta híbrida extremamente ágil, leve e confortável, ideal para exercitar-se, rodar na cidade ou passear no fim de semana.",
+    price: 3890.00,
+    originalPrice: 4990.00,
+    category: "bicicletas",
+    specs: ["Transmissão: Shimano Tourney 14 velocidades", "Quadro: SmartForm C3 Alloy com grafismos refletivos", "Freios: Promax mechanical disc", "Pneus: Kenda Khan II 700x35c", "Sensor de roda integrado Cannondale App"],
+    rating: 4.7,
+    imageUrl: "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?w=500&q=80",
+    stock: 9,
+    warranty: "Garantia de 2 anos"
+  },
+  {
+    id: "xiaomi-scooter-pro",
+    name: "Patinete Elétrico Xiaomi Mi Scooter Pro 2",
+    brand: "Xiaomi",
+    model: "Mi Scooter Pro 2",
+    description: "A solução perfeita para micromobilidade urbana rápida. Dobrável em 3 segundos, sistema de freio duplo E-ABS e painel digital de alta resolução completo.",
+    price: 3499.00,
+    originalPrice: 4799.00,
+    category: "bicicletas",
+    specs: ["Motor: 300W nominal (600W pico)", "Autonomia: Até 45 km", "Velocidade Máxima: 25 km/h", "Pneus pneumáticos de 8.5 polegadas", "Painel digital de controle integrado"],
+    rating: 4.7,
+    imageUrl: "https://images.unsplash.com/photo-1558244402-286df5f65379?w=500&q=80",
+    stock: 12,
+    warranty: "1 ano com assistência nacional"
+  },
+  {
+    id: "projector-samsung-freestyle",
+    name: "Projetor Smart Portátil Samsung The Freestyle 2nd Gen",
+    brand: "Samsung",
+    model: "The Freestyle Gen 2",
+    description: "Sua tela gigante em qualquer lugar: imagem de até 100 polegadas, ajuste de foco automático e áudio 360 premium com sistema operacional Tizen.",
+    price: 3999.00,
+    originalPrice: 5999.00,
+    category: "tvs",
+    specs: ["Resolução: Full HD nativa com HDR10+", "Tamanho da tela: 30 a 100 polegadas", "Foco e nivelamento automático instantâneo", "Áudio: 5W RMS 360 Graus", "Assistentes de voz Alexa e Bixby integrados"],
+    rating: 4.8,
+    imageUrl: "https://images.unsplash.com/photo-1535016120720-40c646be5580?w=500&q=80",
+    stock: 8,
+    warranty: "1 ano de garantia nacional"
+  },
+  {
+    id: "speaker-jbl-boombox-3",
+    name: "Caixa de Som Bluetooth JBL Boombox 3",
+    brand: "JBL",
+    model: "Boombox 3",
+    description: "Som massivo e graves mais profundos com o novo sistema de 3 vias. À prova de poeira e água IP67, bateria gigante para até 24 horas de reprodução.",
+    price: 2499.00,
+    originalPrice: 3299.00,
+    category: "fones",
+    specs: ["Potência: 1x 80W RMS subwoofer + 2x 40W midrange + 2x 10W tweeter", "Autonomia de bateria: Até 24 horas", "Classificação IP67 (resistente à água e poeira)", "Tecnologia JBL PartyBoost para pareamento"],
+    rating: 4.9,
+    imageUrl: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=500&q=80",
+    stock: 15,
+    warranty: "1 ano com o fabricante"
+  },
+  {
+    id: "keyboard-keychron-q6",
+    name: "Teclado Mecânico Premium Keychron Q6 Pro",
+    brand: "Keychron",
+    model: "Q6 Pro ISO layout",
+    description: "Teclado mecânico customizado em alumínio completo CNC, hot-swappable, compatível com QMK/VIA para programação completa de teclas e conexão Bluetooth ou cabo.",
+    price: 1899.00,
+    originalPrice: 2499.00,
+    category: "perifericos",
+    specs: ["Layout: Full-size (100% com teclado numérico)", "Conexão: Sem fio Bluetooth 5.1 ou USB-C", "Corpo de Alumínio anodizado usinado em CNC", "Switches: Keychron K Pro Mecânicos Lubrificados", "Iluminação RGB voltada para o sul"],
+    rating: 4.9,
+    imageUrl: "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=500&q=80",
+    stock: 6,
+    warranty: "1 ano com a marca"
   }
 ];
 
@@ -243,7 +348,12 @@ export const getLocalProducts = (): Product[] => {
     return DEFAULT_PRODUCTS;
   }
   try {
-    return JSON.parse(stored);
+    const parsed = JSON.parse(stored);
+    if (parsed.length < DEFAULT_PRODUCTS.length) {
+      localStorage.setItem("technova_products_db", JSON.stringify(DEFAULT_PRODUCTS));
+      return DEFAULT_PRODUCTS;
+    }
+    return parsed;
   } catch (e) {
     console.error("Failed to parse local products, resetting to defaults", e);
     localStorage.setItem("technova_products_db", JSON.stringify(DEFAULT_PRODUCTS));

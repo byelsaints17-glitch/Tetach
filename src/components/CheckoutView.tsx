@@ -1695,9 +1695,8 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
 
             {/* Info badge */}
             <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 text-[11px] text-gray-400 leading-relaxed text-center space-y-1">
-              <p className="font-bold text-white">📬 Envio de dados por e-mail</p>
-              <p>Ao clicar no botão acima, todos os dados serão processados e uma notificação completa será disparada para seu e-mail de administrador:</p>
-              <p className="text-blue-400 font-bold font-mono text-[10px] break-all">byelsaints17@gmail.com</p>
+              <p className="font-bold text-white">🛡️ Compra 100% Segura</p>
+              <p>Sua transação é protegida com criptografia de ponta a ponta. Você receberá um e-mail com todos os detalhes e o código de rastreamento do seu pedido.</p>
             </div>
           </div>
         </div>

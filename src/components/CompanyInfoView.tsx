@@ -130,7 +130,7 @@ export default function CompanyInfoView({
 
             <section className="space-y-2">
               <h3 className="text-white font-extrabold text-base">4. Seus Direitos</h3>
-              <p>Em conformidade com a LGPD, você possui o direito de, a qualquer momento, solicitar o acesso, retificação, limitação ou exclusão definitiva de seus dados do nosso banco de dados. Para qualquer solicitação, entre em contato através de nossa página de suporte ou envie um e-mail para <strong className="text-white">byelsaints17@gmail.com</strong>.</p>
+              <p>Em conformidade com a LGPD, você possui o direito de, a qualquer momento, solicitar o acesso, retificação, limitação ou exclusão definitiva de seus dados do nosso banco de dados. Para qualquer solicitação, entre em contato através de nossa página de suporte ou envie um e-mail para <strong className="text-white">lgpd@technova.com.br</strong>.</p>
             </section>
           </div>
         </div>
