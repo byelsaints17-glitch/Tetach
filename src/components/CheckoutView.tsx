@@ -1662,10 +1662,16 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
                   <span className="font-bold text-white">R$ {shippingFee.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                 )}
               </div>
+              {(paymentMethod === "mercadopago_pix" || paymentMethod === "mercadopago_boleto") && (
+                <div className="flex justify-between text-emerald-400 font-bold">
+                  <span>Desconto (10% no {paymentMethod === "mercadopago_pix" ? "Pix" : "Boleto"}):</span>
+                  <span>- R$ {(totalAmount * 0.1).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                </div>
+              )}
               <div className="border-t border-slate-800 pt-3 flex justify-between items-end text-white">
                 <span className="font-extrabold">Total Geral:</span>
                 <span className="text-xl font-black text-white">
-                  R$ {totalAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  R$ {((paymentMethod === "mercadopago_pix" || paymentMethod === "mercadopago_boleto") ? totalAmount * 0.9 : totalAmount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
