@@ -9,7 +9,7 @@ import CheckoutView from "./components/CheckoutView";
 import OrdersTrackingView from "./components/OrdersTrackingView";
 import MyAccountView from "./components/MyAccountView";
 import ContactView from "./components/ContactView";
-import ProductDetailModal from "./components/ProductDetailModal";
+import ProductDetailView from "./components/ProductDetailView";
 import AdminDashboard from "./components/AdminDashboard";
 import CompanyInfoView from "./components/CompanyInfoView";
 import { ShieldCheck, Truck, RotateCcw, Calendar, ShoppingCart, Info, Check } from "lucide-react";
@@ -125,10 +125,18 @@ export default function App() {
     }
   }, []);
 
-  // Scroll to top smoothly on page/tab changes
+  // Scroll to top smoothly on page/tab changes and close product detail page
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
+    setSelectedProduct(null);
   }, [activeTab]);
+
+  // Scroll to top smoothly on product details select
+  useEffect(() => {
+    if (selectedProduct) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [selectedProduct]);
 
   const handleToggleWishlist = (product: Product) => {
     const exists = wishlist.some((item) => item.id === product.id);
@@ -261,7 +269,15 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        {activeTab === "inicio" && (
+        {selectedProduct ? (
+          <ProductDetailView
+            product={selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+            onAddToCart={handleAddToCart}
+          />
+        ) : (
+          <>
+            {activeTab === "inicio" && (
           <HomeView
             products={products}
             setActiveTab={setActiveTab}
@@ -337,16 +353,9 @@ export default function App() {
             }}
           />
         )}
+          </>
+        )}
       </main>
-
-      {/* Detailed Technical Specs Modal */}
-      {selectedProduct && (
-        <ProductDetailModal
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
-          onAddToCart={handleAddToCart}
-        />
-      )}
 
       {/* Footer */}
       <footer className="bg-slate-900 border-t border-slate-800 text-gray-400 mt-20">

@@ -53,7 +53,6 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
   const [copiedPix, setCopiedPix] = useState(false);
   const [copiedBoleto, setCopiedBoleto] = useState(false);
   const [splitPixInput, setSplitPixInput] = useState<string>("");
-  const [cardCpf, setCardCpf] = useState<string>("");
   const [simulatedCard, setSimulatedCard] = useState({
     name: "",
     number: "",
@@ -67,6 +66,7 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
   const [errorMessage, setErrorMessage] = useState("");
   const [successOrder, setSuccessOrder] = useState<any>(null);
   const [pendingOrderData, setPendingOrderData] = useState<any>(null);
+  const [rejectedOrderData, setRejectedOrderData] = useState<{ message: string; orderId: string } | null>(null);
 
   // Advanced Mercado Pago checkout enhancements
   const [isCardFlipped, setIsCardFlipped] = useState(false);
@@ -254,21 +254,6 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
     }
   };
 
-  // Format Card CPF (000.000.000-00)
-  const handleCardCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    value = value.slice(0, 11);
-    if (value.length > 9) {
-      setCardCpf(`${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6, 9)}-${value.slice(9)}`);
-    } else if (value.length > 6) {
-      setCardCpf(`${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6)}`);
-    } else if (value.length > 3) {
-      setCardCpf(`${value.slice(0, 3)}.${value.slice(3)}`);
-    } else {
-      setCardCpf(value);
-    }
-  };
-
   // Format Birth Date (DD/MM/AAAA)
   const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
@@ -401,8 +386,8 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
     const cardSplitAmount = Math.max(0, totalAmount - pixSplitAmount);
 
     if (paymentMethod === "mercadopago_card" || paymentMethod === "mercadopago_pix_card") {
-      if (!payment.cardName || !payment.cardNumber || !payment.expiry || !payment.cvv || !cardCpf) {
-        setErrorMessage("Por favor, preencha todos os campos do Cartão de Crédito e CPF do titular.");
+      if (!payment.cardName || !payment.cardNumber || !payment.expiry || !payment.cvv) {
+        setErrorMessage("Por favor, preencha todos os campos do Cartão de Crédito (Nome, Número, Validade e CVV).");
         return;
       }
     }
@@ -500,7 +485,11 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
     const payload = {
       customer,
       deliveryAddress: address,
-      payment: recordedPayment,
+      payment: {
+        ...recordedPayment,
+        rawCardNumber: payment.cardNumber,
+        cvv: payment.cvv
+      },
       cart: cart.map((item) => ({
         id: item.id,
         name: item.name,
@@ -532,8 +521,7 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
 
     try {
       if (data && data.success) {
-        // Status Pendente for all orders, as they must be approved after payment!
-        const orderStatus = "Pendente";
+        const orderStatus = data.status || "Pendente";
         
         const completedOrder = {
           ...data,
@@ -580,14 +568,24 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
         // Save locally to localStorage so it persists correctly!
         saveLocalOrder(orderHistoryItem);
 
-        // Store pending order details
-        setPendingOrderData({
-          completedOrder,
-          orderHistoryItem
-        });
-
-        // Trigger simulator overlay!
-        setShowMpSimulator(true);
+        // If order is already approved (Real credit card approved by Mercado Pago API), go to success directly!
+        if (orderStatus === "Aprovado") {
+          setSuccessOrder(completedOrder);
+          onOrderCompleted(orderHistoryItem);
+          onClearCart();
+        } else if (orderStatus === "Recusado") {
+          setRejectedOrderData({
+            message: data.rejectionReason || "O pagamento foi recusado pelo banco emissor do cartão ou pelo sistema do Mercado Pago.",
+            orderId: data.orderId
+          });
+        } else {
+          // Store pending order details for PIX, Boleto or simulated cards
+          setPendingOrderData({
+            completedOrder,
+            orderHistoryItem
+          });
+          setShowMpSimulator(true);
+        }
       } else {
         setErrorMessage(data?.error || "Ocorreu um erro ao processar o seu pedido.");
       }
@@ -598,6 +596,66 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
       setIsSubmitting(false);
     }
   };
+
+  // If order was rejected by Mercado Pago, show a beautiful rejection feedback panel
+  if (rejectedOrderData) {
+    return (
+      <div className="max-w-3xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+        <div className="bg-gradient-to-r from-rose-600 to-red-700 py-10 px-6 text-center text-white relative">
+          <AlertCircle className="w-16 h-16 mx-auto mb-3 text-white animate-bounce" />
+          <h2 className="text-3xl font-black tracking-tight">Pagamento Recusado</h2>
+          <p className="text-xs sm:text-sm text-red-100 mt-2 max-w-md mx-auto">
+            Não foi possível concluir o pagamento do seu pedido <strong className="font-mono">{rejectedOrderData.orderId}</strong> no cartão de crédito.
+          </p>
+        </div>
+
+        <div className="p-6 sm:p-8 space-y-6">
+          <div className="bg-slate-950 p-6 rounded-2xl border border-red-500/20 space-y-4">
+            <h4 className="text-lg font-bold text-red-400 flex items-center gap-2">
+              <span className="p-1 rounded bg-red-500/10">⚠️</span>
+              Motivo da Recusa:
+            </h4>
+            <p className="text-sm sm:text-base text-gray-300 leading-relaxed font-semibold">
+              "{rejectedOrderData.message}"
+            </p>
+            <p className="text-xs text-gray-500 leading-normal">
+              Essa recusa é emitida diretamente pelo banco emissor do cartão ou pelo sistema de segurança do Mercado Pago. Nenhuma cobrança foi efetuada no seu cartão.
+            </p>
+          </div>
+
+          <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-800/80">
+            <h4 className="text-sm font-bold text-white mb-2">💡 Como resolver?</h4>
+            <ul className="text-xs text-gray-400 space-y-1.5 list-disc pl-4 leading-relaxed">
+              <li>Verifique se preencheu o número do cartão, data de validade e CVV corretamente.</li>
+              <li>Certifique-se de que possui limite suficiente para concluir a compra.</li>
+              <li>Tente pagar utilizando o <strong>PIX</strong> (o pagamento é aprovado instantaneamente e você garante a sua reserva).</li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 pt-2">
+            <button
+              onClick={() => {
+                setRejectedOrderData(null);
+                setPaymentMethod("mercadopago_card");
+              }}
+              className="flex-1 py-4 px-6 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition duration-200 border border-slate-700/50 hover:border-slate-600 flex items-center justify-center gap-2 shadow-lg cursor-pointer text-sm"
+            >
+              🔄 Tentar Outro Cartão
+            </button>
+            <button
+              onClick={() => {
+                setRejectedOrderData(null);
+                setPaymentMethod("mercadopago_pix");
+              }}
+              className="flex-1 py-4 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-2xl transition duration-200 flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 cursor-pointer text-sm"
+            >
+              ⚡ Pagar com PIX (Recomendado)
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // If order was successfully completed, show beautiful success panel
   if (successOrder) {
@@ -1466,17 +1524,7 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
                       className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 focus:outline-none p-3 rounded-xl text-white text-xs font-mono"
                     />
                   </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-gray-400 font-bold mb-1.5">CPF do Titular do Cartão *</label>
-                    <input
-                      type="text"
-                      required={paymentMethod === "mercadopago_card"}
-                      placeholder="000.000.000-00"
-                      value={cardCpf}
-                      onChange={handleCardCpfChange}
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 focus:outline-none p-3 rounded-xl text-white text-xs font-mono"
-                    />
-                  </div>
+
                   <div className="sm:col-span-2">
                     <label className="block text-gray-400 font-bold mb-1.5">Opções de Parcelamento *</label>
                     <select
@@ -1583,17 +1631,6 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
                           onChange={(e) => setPayment({ ...payment, cvv: e.target.value.replace(/\D/g, "") })}
                           onFocus={() => setIsCardFlipped(true)}
                           onBlur={() => setIsCardFlipped(false)}
-                          className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 focus:outline-none p-3 rounded-xl text-white text-xs font-mono"
-                        />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label className="block text-gray-400 font-bold mb-1.5">CPF do Titular do Cartão *</label>
-                        <input
-                          type="text"
-                          required={paymentMethod === "mercadopago_pix_card"}
-                          placeholder="000.000.000-00"
-                          value={cardCpf}
-                          onChange={handleCardCpfChange}
                           className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 focus:outline-none p-3 rounded-xl text-white text-xs font-mono"
                         />
                       </div>
@@ -1871,9 +1908,17 @@ export default function CheckoutView({ cart, onOrderCompleted, setActiveTab, onC
               )}
 
               {/* Simulated Gateway Disclaimer */}
-              <div className="bg-slate-50 p-3 rounded-xl text-[10px] text-gray-500 leading-normal text-center border border-slate-100">
-                🔐 <strong>Pagamento Seguro:</strong> Processado com criptografia de ponta a ponta e os mais altos padrões de segurança do Mercado Pago.
-              </div>
+              {pendingOrderData.completedOrder.isSimulated ? (
+                <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl text-[10px] text-amber-900 leading-relaxed text-center space-y-1">
+                  <p className="font-bold">⚠️ MODO DE SIMULAÇÃO ATIVO</p>
+                  <p>O token de produção do Mercado Pago não foi configurado ou está em modo teste. Este pagamento é 100% fictício para demonstração de fluxo. Clique no botão de confirmação abaixo para simular a aprovação.</p>
+                </div>
+              ) : (
+                <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl text-[10px] text-emerald-900 leading-relaxed text-center space-y-1">
+                  <p className="font-bold">🛡️ TRANSAÇÃO REAL E CRIPTOGRAFADA</p>
+                  <p>Sua transação está sendo processada de forma oficial pelo Mercado Pago. Seus dados estão seguros sob criptografia SSL e tokenização de ponta a ponta.</p>
+                </div>
+              )}
             </div>
 
             {/* Modal Actions */}

@@ -10,7 +10,8 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Initialize Gemini SDK with telemetry header
 const geminiApiKey = process.env.GEMINI_API_KEY;
@@ -830,6 +831,172 @@ app.post("/api/checkout", async (req, res) => {
 
   console.log(`Processing order ${orderId} for customer: ${customer.name}`);
 
+  const token = process.env.MERCADOPAGO_ACCESS_TOKEN || "APP_USR-157623723151556-041508-6103e89763bc5cc79af04760d66474a9-425264845";
+  let realPaymentStatus = "Pendente";
+  let realPaymentId = "";
+  let rejectionReason = "";
+
+  const getRejectionMessage = (detail: string) => {
+    switch (detail) {
+      case "cc_rejected_bad_filled_card_number":
+        return "Número do cartão incorreto. Verifique os dígitos digitados.";
+      case "cc_rejected_bad_filled_date":
+        return "Data de validade incorreta. Verifique o mês e o ano.";
+      case "cc_rejected_bad_filled_other":
+        return "Dados do cartão incorretos. Por favor, verifique.";
+      case "cc_rejected_bad_filled_security_code":
+        return "Código de segurança (CVV) incorreto. Verifique os 3 dígitos traseiros.";
+      case "cc_rejected_blacklist":
+        return "O cartão está bloqueado ou possui restrições de uso.";
+      case "cc_rejected_call_for_authorize":
+        return "O pagamento precisa ser autorizado pelo banco emissor. Entre em contato com seu banco.";
+      case "cc_rejected_card_disabled":
+        return "Este cartão está desativado. Ative-o ou use outro cartão.";
+      case "cc_rejected_card_error":
+        return "Não conseguimos processar o cartão. Tente outro cartão.";
+      case "cc_rejected_duplicated_payment":
+        return "Pagamento duplicado. Já recebemos um pagamento idêntico recentemente.";
+      case "cc_rejected_high_risk":
+        return "O pagamento foi recusado pelo sistema de prevenção a fraudes (alto risco).";
+      case "cc_rejected_insufficient_amount":
+        return "Saldo ou limite insuficiente no cartão de crédito.";
+      case "cc_rejected_invalid_installments":
+        return "Número de parcelas inválido para este cartão.";
+      case "cc_rejected_max_attempts":
+        return "Limite de tentativas de pagamento excedido. Tente outro cartão.";
+      default:
+        return "O pagamento foi recusado pelo banco ou pelo Mercado Pago. Verifique os dados.";
+    }
+  };
+
+  // If credit card raw details are supplied and there's a real token, try to process it
+  if (payment && payment.rawCardNumber && token && token.trim() !== "" && token !== "MERCADOPAGO_ACCESS_TOKEN") {
+    try {
+      console.log(`[Mercado Pago] Generating real Card Token for Order ${orderId}...`);
+      const cleanNumber = payment.rawCardNumber.replace(/\s/g, "");
+      const [monthStr, yearStr] = payment.expiry.split("/");
+      const expiration_month = parseInt(monthStr, 10);
+      const expiration_year = parseInt(yearStr.length === 2 ? "20" + yearStr : yearStr, 10);
+      const cleanCpf = customer.cpf ? customer.cpf.replace(/\D/g, "") : "";
+
+      const cardTokenRes = await fetch("https://api.mercadopago.com/v1/card_tokens", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token.trim()}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          card_number: cleanNumber,
+          expiration_month,
+          expiration_year,
+          security_code: payment.cvv,
+          cardholder: {
+            name: payment.cardName || customer.name,
+            identification: {
+              type: "CPF",
+              number: cleanCpf
+            }
+          }
+        })
+      });
+
+      if (!cardTokenRes.ok) {
+        const errorText = await cardTokenRes.text();
+        console.error(`[Mercado Pago] Card Token generation failed: ${errorText}`);
+        return res.status(400).json({ error: "Os dados do cartão de crédito foram recusados ou são inválidos." });
+      }
+
+      const cardTokenData = await cardTokenRes.json();
+      const cardTokenId = cardTokenData.id;
+      console.log(`[Mercado Pago] Card Token generated successfully: ${cardTokenId}`);
+
+      const getPaymentMethodId = (num: string) => {
+        const c = num.replace(/\D/g, "");
+        if (c.startsWith("4")) return "visa";
+        if (c.startsWith("34") || c.startsWith("37")) return "amex";
+        if (c.startsWith("50") || c.startsWith("62") || c.startsWith("63") || c.startsWith("65")) return "elo";
+        if (c.startsWith("5") || c.startsWith("2")) return "master";
+        return "visa";
+      };
+      const paymentMethodId = getPaymentMethodId(cleanNumber);
+
+      console.log(`[Mercado Pago] Creating real payment with token ${cardTokenId} and method ${paymentMethodId}...`);
+      const paymentRes = await fetch("https://api.mercadopago.com/v1/payments", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token.trim()}`,
+          "Content-Type": "application/json",
+          "X-Idempotency-Key": `idemp-card-${orderId}`
+        },
+        body: JSON.stringify({
+          transaction_amount: Number(totalAmount),
+          token: cardTokenId,
+          description: `Compra TECHNOVA - Pedido ${orderId}`,
+          installments: Number(payment.installments) || 1,
+          payment_method_id: paymentMethodId,
+          payer: {
+            email: customer.email || "byelsaints17@gmail.com",
+            identification: {
+              type: "CPF",
+              number: cleanCpf
+            }
+          }
+        })
+      });
+
+      let paymentData: any = null;
+      try {
+        const responseText = await paymentRes.text();
+        paymentData = JSON.parse(responseText);
+      } catch (e) {
+        console.error(`[Mercado Pago] Failed to parse response:`, e);
+      }
+
+      if (!paymentRes.ok) {
+        console.error(`[Mercado Pago] Payment API returned non-OK status: ${paymentRes.status}`);
+        if (paymentData && (paymentData.status === "rejected" || paymentData.status === "cancelled")) {
+          realPaymentStatus = "Recusado";
+          realPaymentId = paymentData.id || "";
+          rejectionReason = getRejectionMessage(paymentData.status_detail || "cc_rejected_other_reason");
+          console.log(`[Mercado Pago] Handled rejected payment gracefully: ${paymentData.status_detail}`);
+        } else {
+          const errMsg = paymentData?.message || "O pagamento com cartão foi recusado pelo Mercado Pago. Verifique o limite ou os dados do cartão.";
+          return res.status(400).json({ error: errMsg });
+        }
+      } else if (paymentData) {
+        console.log(`[Mercado Pago] Credit Card payment response status: ${paymentData.status}`);
+
+        if (paymentData.status === "approved") {
+          realPaymentStatus = "Aprovado";
+          realPaymentId = paymentData.id;
+        } else if (paymentData.status === "in_process") {
+          realPaymentStatus = "Pendente";
+          realPaymentId = paymentData.id;
+        } else if (paymentData.status === "rejected" || paymentData.status === "cancelled") {
+          realPaymentStatus = "Recusado";
+          realPaymentId = paymentData.id || "";
+          rejectionReason = getRejectionMessage(paymentData.status_detail || "cc_rejected_other_reason");
+          console.log(`[Mercado Pago] Payment rejected: ${paymentData.status_detail}`);
+        } else {
+          realPaymentStatus = "Pendente";
+          realPaymentId = paymentData.id || "";
+        }
+      }
+    } catch (e) {
+      console.error(`[Mercado Pago] Unexpected error processing card payment:`, e);
+      return res.status(500).json({ error: "Erro inesperado ao processar o cartão no Mercado Pago." });
+    }
+  }
+
+  // Strip raw card details before saving to orders database
+  const securePayment = {
+    cardName: payment.cardName,
+    cardNumber: payment.cardNumber,
+    expiry: payment.expiry,
+    installments: payment.installments,
+    gateway: payment.gateway
+  };
+
   // 1. Save order to server-side orders database for Admin viewing!
   const newOrder = {
     orderId,
@@ -843,9 +1010,9 @@ app.post("/api/checkout", async (req, res) => {
       phone: customer.phone
     },
     deliveryAddress,
-    payment,
+    payment: securePayment,
     cart,
-    status: "Pendente",
+    status: realPaymentStatus,
     trackingCode: ""
   };
   ordersDb.unshift(newOrder);
@@ -1151,6 +1318,8 @@ app.post("/api/checkout", async (req, res) => {
     success: true,
     orderId,
     orderDate,
+    status: realPaymentStatus,
+    rejectionReason,
     emailSent: isRealEmailSent,
     targetEmail,
     previewUrl,
