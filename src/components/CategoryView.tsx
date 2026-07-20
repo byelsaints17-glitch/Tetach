@@ -82,7 +82,7 @@ export default function CategoryView({
         };
       case "fones":
         return {
-          title: "Fones de Ouvido & Caixas de Som",
+          title: "Fones de Ouvido & Som",
           desc: "Som de alta fidelidade, fones bluetooth ANC (cancelamento de ruído) e caixas acústicas potentes.",
           icon: Headphones,
         };
@@ -107,7 +107,7 @@ export default function CategoryView({
       case "bicicletas":
         return {
           title: "Bicicletas e Mobilidade",
-          desc: "Encontre bicicletas elétricas, mountain bikes, urbanas e acessórios de mobilidade de alta tecnologia para o seu dia a dia.",
+          desc: "Encontre bicicletas elétricas, mountain bikes, urbanas e acessórios de mobilidade de alta tecnologia.",
           icon: Bike,
         };
       case "ofertas":
@@ -119,13 +119,13 @@ export default function CategoryView({
       case "lancamentos":
         return {
           title: "Lançamentos Tecnológicos",
-          desc: "Fique por dentro das novidades recém-lançadas na indústria mundial de eletrônicos e wearables.",
+          desc: "Fique por dentro das novidades recém-lançadas na indústria mundial de eletrônicos.",
           icon: Sparkles,
         };
       default:
         return {
           title: "Catálogo Geral de Tecnologia",
-          desc: "Navegue pela coleção completa de produtos disponíveis na TECHNOVA.",
+          desc: "Navegue pela coleção completa de produtos de alta tecnologia disponíveis na TECHNOVA.",
           icon: SlidersHorizontal,
         };
     }
@@ -145,7 +145,7 @@ export default function CategoryView({
   const processedProducts = useMemo(() => {
     let list = [...products];
 
-    // Category filter is pre-applied by parent state or backend, but let's double check local categories
+    // Category filter is pre-applied by parent state or backend
     if (category !== "todos" && category !== "ofertas" && category !== "lancamentos") {
       list = list.filter((p) => p.category === category);
     } else if (category === "ofertas") {
@@ -185,31 +185,31 @@ export default function CategoryView({
   const Icon = titleAndDesc.icon;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* View Header Info */}
-      <div className="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="bg-white border border-gray-200 p-6 sm:p-8 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm">
         <div className="space-y-2">
           <div className="flex items-center gap-2.5">
-            <div className="bg-blue-600/20 text-blue-400 p-2 rounded-xl">
-              <Icon className="w-6 h-6" />
+            <div className="bg-[#0086ff]/10 text-[#0086ff] p-2.5 rounded-xl">
+              <Icon className="w-5 h-5 stroke-[2.5]" />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-black text-gray-800 tracking-tight">
               {titleAndDesc.title}
             </h2>
           </div>
-          <p className="text-sm text-gray-400 max-w-2xl font-medium leading-relaxed">
+          <p className="text-xs sm:text-sm text-gray-400 max-w-2xl font-bold leading-relaxed">
             {titleAndDesc.desc}
           </p>
         </div>
 
         {/* Dynamic Badge Count */}
-        <span className="bg-slate-800 text-gray-300 font-bold text-xs px-4 py-2 rounded-xl border border-slate-700/50">
-          {processedProducts.length} {processedProducts.length === 1 ? "Produto" : "Produtos"}
+        <span className="bg-gray-100 text-gray-500 font-black text-xs px-4 py-2 rounded-xl border border-gray-200 shrink-0">
+          {processedProducts.length} {processedProducts.length === 1 ? "Produto" : "Produtos"} encontrado(s)
         </span>
       </div>
 
       {/* Filter and Control Bar */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-white border border-gray-200 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
         {/* Search input in catalog */}
         <div className="relative w-full sm:max-w-xs">
           <input
@@ -217,7 +217,7 @@ export default function CategoryView({
             placeholder="Filtrar nesta categoria..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-800 text-white placeholder-gray-400 pl-9 pr-4 py-2 rounded-xl border border-slate-700/80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs"
+            className="w-full bg-gray-50 text-slate-800 placeholder-gray-400 pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#0086ff] focus:border-transparent text-xs font-semibold"
           />
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
         </div>
@@ -230,7 +230,7 @@ export default function CategoryView({
               <select
                 value={brandFilter}
                 onChange={(e) => setBrandFilter(e.target.value)}
-                className="bg-slate-800 border border-slate-700 text-white text-xs rounded-lg py-1.5 px-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                className="bg-white border border-gray-200 text-slate-700 text-xs rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#0086ff] font-bold"
               >
                 <option value="all">Todas as marcas</option>
                 {brands.map(
@@ -251,7 +251,7 @@ export default function CategoryView({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-slate-800 border border-slate-700 text-white text-xs rounded-lg py-1.5 px-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+              className="bg-white border border-gray-200 text-slate-700 text-xs rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#0086ff] font-bold"
             >
               <option value="relevance">Mais Relevantes</option>
               <option value="price-asc">Menor Preço</option>
@@ -264,23 +264,23 @@ export default function CategoryView({
 
       {/* Catalog Grid */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center bg-white border border-gray-200 rounded-3xl shadow-sm">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#0086ff]"></div>
           <div>
-            <h4 className="text-white font-bold text-lg">Busca Inteligente TECHNOVA</h4>
-            <p className="text-sm text-gray-400 max-w-sm mt-1">
-              Conectando com o Google API para obter as especificações, preços atualizados e avaliações reais de mercado...
+            <h4 className="text-gray-800 font-extrabold text-lg">Busca Inteligente TECHNOVA</h4>
+            <p className="text-xs text-gray-400 max-w-sm mt-1 font-bold">
+              Obtendo as especificações oficiais, preços atualizados e avaliações reais de mercado...
             </p>
           </div>
         </div>
       ) : processedProducts.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl py-20 text-center max-w-md mx-auto p-6 flex flex-col items-center gap-4">
-          <div className="bg-slate-800 p-4 rounded-full text-gray-400">
+        <div className="bg-white border border-gray-200 rounded-3xl py-20 text-center max-w-md mx-auto p-6 flex flex-col items-center gap-4 shadow-sm">
+          <div className="bg-gray-50 p-4 rounded-full text-gray-400 border border-gray-100">
             <AlertCircle className="w-10 h-10" />
           </div>
           <div>
-            <h4 className="text-white font-extrabold text-lg">Nenhum eletrônico encontrado</h4>
-            <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
+            <h4 className="text-gray-800 font-extrabold text-lg">Nenhum eletrônico encontrado</h4>
+            <p className="text-xs text-gray-400 mt-1.5 max-w-xs mx-auto font-bold leading-normal">
               Tente redefinir seus filtros de busca, usar outras palavras-chave ou recarregar os padrões da TECHNOVA.
             </p>
           </div>
@@ -290,7 +290,7 @@ export default function CategoryView({
               setBrandFilter("all");
               setSortBy("relevance");
             }}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs py-2 px-4 rounded-xl transition-all"
+            className="bg-[#0086ff] hover:bg-blue-600 text-white font-extrabold text-xs py-2.5 px-5 rounded-xl transition-all shadow-sm active:scale-95"
           >
             Limpar Filtros
           </button>

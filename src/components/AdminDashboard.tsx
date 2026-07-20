@@ -60,6 +60,27 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
   const [formDescription, setFormDescription] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Supabase states
+  const [showSupabaseSql, setShowSupabaseSql] = useState(false);
+  const [copiedSql, setCopiedSql] = useState(false);
+  const supabaseSqlCode = `CREATE TABLE products (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  brand TEXT,
+  model TEXT,
+  description TEXT,
+  price NUMERIC NOT NULL,
+  "originalPrice" NUMERIC,
+  category TEXT,
+  specs JSONB,
+  rating NUMERIC,
+  "imageUrl" TEXT,
+  images JSONB,
+  stock INTEGER,
+  warranty TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);`;
+
   // API Import Wizard States
   const [apiSearchQuery, setApiSearchQuery] = useState("");
   const [apiSource, setApiSource] = useState<"dummyjson" | "fakestore" | "mercadolibre">("dummyjson");
@@ -101,21 +122,23 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
   };
 
   const loadProducts = async () => {
-    // Prioritize localStorage as source of truth for seamless product management
-    const local = getLocalProducts();
-    setProductsList(local);
     try {
       const res = await fetch("/api/admin/products");
       if (res.ok) {
         const data = await res.json();
-        // Only override if local list is empty and server has items (initial run)
-        if (local.length === 0 && data.length > 0) {
+        if (data && data.length > 0) {
           setProductsList(data);
+          // Sync with local storage so that other fallbacks work and remain perfectly aligned
+          localStorage.setItem("technova_products_db", JSON.stringify(data));
+          return;
         }
       }
     } catch (e) {
-      console.warn("Error loading products from API:", e);
+      console.warn("Error loading products from API, falling back to local database:", e);
     }
+    // Fallback if API fails
+    const local = getLocalProducts();
+    setProductsList(local);
   };
 
   const loadOrders = async () => {
@@ -905,6 +928,96 @@ export default function AdminDashboard({ onProductChanged }: AdminDashboardProps
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Supabase Status Alert Banner */}
+      {reports && reports.supabaseStatus && reports.supabaseStatus.configured && (
+        <div className="mt-4">
+          {reports.supabaseStatus.isTableMissing ? (
+            <div className="bg-amber-600/10 border border-amber-500/30 p-5 rounded-xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-amber-500/20 text-amber-400 p-2 rounded-lg shrink-0 mt-0.5 animate-pulse">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-amber-300 text-sm">Banco de Dados Supabase Conectado, mas Sem Tabela!</h4>
+                    <p className="text-xs text-gray-300 mt-1 leading-relaxed">
+                      A tabela <code className="text-amber-400 font-mono bg-amber-500/10 px-1 py-0.5 rounded">products</code> não foi encontrada na sua conta do Supabase. Para sincronizar seus produtos em tempo real (essencial para o funcionamento no Vercel/Produção), crie a tabela no editor SQL do Supabase.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSupabaseSql(!showSupabaseSql)}
+                  className="bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs px-4 py-2 rounded-lg shrink-0 transition-all cursor-pointer shadow-sm active:scale-95"
+                >
+                  {showSupabaseSql ? "Ocultar Instruções" : "Visualizar Comando SQL"}
+                </button>
+              </div>
+
+              {showSupabaseSql && (
+                <div className="bg-slate-950 border border-slate-850 rounded-lg p-4 space-y-3 font-mono text-xs">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <span className="text-gray-400 font-bold">SQL Editor Script:</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(supabaseSqlCode);
+                        setCopiedSql(true);
+                        setTimeout(() => setCopiedSql(false), 2000);
+                      }}
+                      className="text-xs text-blue-400 hover:text-blue-350 flex items-center gap-1 font-bold bg-blue-500/10 px-2.5 py-1 rounded transition-all cursor-pointer"
+                    >
+                      {copiedSql ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span>Copiado!</span>
+                        </>
+                      ) : (
+                        <span>Copiar Comando SQL</span>
+                      )}
+                    </button>
+                  </div>
+                  <pre className="text-emerald-400 overflow-x-auto p-1 leading-relaxed max-h-[220px] scrollbar-thin select-all">
+                    {supabaseSqlCode}
+                  </pre>
+                  <p className="text-[11px] text-gray-400 font-sans mt-2">
+                    💡 <strong>Como Executar:</strong> Acesse seu painel do Supabase, vá em <strong>SQL Editor</strong>, clique em <strong>New Query</strong>, cole o código acima e clique em <strong>Run</strong>. Seus produtos serão sincronizados e salvos automaticamente a partir de então!
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : reports.supabaseStatus.error ? (
+            <div className="bg-rose-600/10 border border-rose-500/30 p-4 rounded-xl flex items-start gap-3">
+              <div className="bg-rose-500/20 text-rose-400 p-2 rounded-lg shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-rose-300 text-sm">Erro de Conexão com Supabase</h4>
+                <p className="text-xs text-gray-300 mt-1 leading-relaxed">
+                  Ocorreu um erro ao tentar buscar dados do Supabase. Verifique suas chaves de ambiente no painel de configurações: 
+                  <code className="text-rose-400 font-mono bg-rose-500/10 px-1 py-0.5 rounded ml-1">{reports.supabaseStatus.error}</code>
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-emerald-600/10 border border-emerald-500/30 p-4 rounded-xl flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-emerald-500/20 text-emerald-400 p-1.5 rounded-lg shrink-0">
+                  <Check className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-emerald-300 text-xs">Supabase Sincronizado com Sucesso!</h4>
+                  <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">
+                    O banco de dados do Supabase está conectado e integrado. Todos os produtos estão sendo salvos e buscados em tempo real no Vercel/Produção.
+                  </p>
+                </div>
+              </div>
+              <span className="text-[9px] font-mono text-emerald-400/80 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full uppercase shrink-0">
+                Banco Ativo
+              </span>
+            </div>
+          )}
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import { Tab, Product } from "../types";
-import { ChevronRight, ArrowRight, Smartphone, Laptop, Headphones, Sparkles, AlertCircle } from "lucide-react";
+import { ChevronRight, ArrowRight, Smartphone, Laptop, Headphones, Sparkles, AlertCircle, ShoppingCart } from "lucide-react";
 import ProductCard from "./ProductCard";
 
 interface HomeViewProps {
@@ -29,78 +29,78 @@ export default function HomeView({
   const categories = [
     {
       id: "celulares" as Tab,
-      title: "Celulares",
-      desc: "Smartphones premium",
+      title: "Smartphones",
+      desc: "Top de Linha das Melhores Marcas",
       icon: Smartphone,
-      color: "from-blue-600 to-indigo-700",
+      color: "bg-blue-600",
       image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=500&q=80",
     },
     {
-      id: "computadores" as Tab,
-      title: "Computadores",
-      desc: "Notebooks & Gamers",
+      id: "notebooks" as Tab,
+      title: "Notebooks",
+      desc: "Produtividade de Alta Performance",
       icon: Laptop,
-      color: "from-cyan-600 to-blue-700",
+      color: "bg-emerald-600",
       image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&q=80",
     },
     {
-      id: "acessorios" as Tab,
-      title: "Acessórios",
-      desc: "Fones, mouses & mais",
+      id: "perifericos" as Tab,
+      title: "Periféricos",
+      desc: "Teclados Mecânicos, Mouses e Mais",
       icon: Headphones,
-      color: "from-purple-600 to-pink-700",
-      image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80",
+      color: "bg-orange-500",
+      image: "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=500&q=80",
     },
   ];
 
-  // Get first 4 featured items
-  const featured = products.slice(0, 4);
+  // Get first 8 featured items (dense grid)
+  const featured = products.slice(0, 8);
 
   return (
     <div className="space-y-12">
       {/* 1. Hero Banner */}
-      <div className="relative bg-slate-950 overflow-hidden rounded-3xl shadow-xl min-h-[420px] flex flex-col justify-center">
-        {/* Abstract background graphics */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/80 to-transparent z-10" />
+      <div className="relative bg-[#0086ff] overflow-hidden rounded-3xl shadow-md min-h-[360px] sm:min-h-[420px] flex flex-col justify-center">
+        {/* Abstract background graphics (Brazilian retail blue to orange sweep) */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0086ff] via-[#0086ff]/80 to-transparent z-10" />
         <img
           src="https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=1200&q=80"
           alt="Tecnologia Banner"
-          className="absolute inset-0 w-full h-full object-cover object-center opacity-40 select-none pointer-events-none"
+          className="absolute inset-0 w-full h-full object-cover object-center opacity-25 select-none pointer-events-none"
         />
 
         {/* Content */}
-        <div className="relative z-20 max-w-2xl px-6 sm:px-12 py-10 space-y-6">
-          <span className="inline-flex items-center gap-1.5 bg-blue-600/20 text-blue-400 font-bold text-xs uppercase tracking-wider px-3 py-1 rounded-full border border-blue-500/30">
-            <Sparkles className="w-3.5 h-3.5" /> Lançamentos Exclusivos
+        <div className="relative z-20 max-w-2xl px-6 sm:px-12 py-10 space-y-5 text-white">
+          <span className="inline-flex items-center gap-1.5 bg-white/20 text-white font-black text-[10px] uppercase tracking-wider px-3 py-1 rounded-full border border-white/20">
+            <Sparkles className="w-3.5 h-3.5" /> LANÇAMENTOS DO MÊS
           </span>
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-none tracking-tight">
-            TECNOLOGIA QUE CONECTA VOCÊ <span className="text-blue-500">AO FUTURO</span>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-none tracking-tight">
+            TECNOLOGIA DO SEU JEITO <span className="text-amber-300">COM PIX DESCONTO</span>
           </h2>
-          <p className="text-sm sm:text-base text-gray-300 max-w-md font-medium leading-relaxed">
-            Descubra smartphones inovadores, notebooks de alta performance e os acessórios perfeitos para o seu ecossistema digital.
+          <p className="text-xs sm:text-sm text-blue-50 max-w-md font-bold leading-relaxed">
+            As melhores marcas de celular, computadores e periféricos premium selecionados para você, com entrega expressa segurada.
           </p>
-          <div className="pt-2 flex flex-wrap gap-4">
+          <div className="pt-2 flex flex-wrap gap-3">
             <button
               onClick={handleBannerClick}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-8 rounded-2xl transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98] text-sm flex items-center gap-2"
+              className="bg-[#ff6500] hover:bg-[#e05900] text-white font-extrabold py-3.5 px-8 rounded-2xl transition-all shadow-md active:scale-[0.98] text-xs uppercase tracking-wider flex items-center gap-2"
             >
-              Ver Produtos <ArrowRight className="w-4 h-4" />
+              Comprar Agora <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => setActiveTab("ofertas")}
-              className="bg-slate-800/80 hover:bg-slate-700 text-white font-bold py-3.5 px-6 rounded-2xl transition-all border border-slate-700/50 text-sm"
+              className="bg-white/10 hover:bg-white/20 text-white font-extrabold py-3.5 px-6 rounded-2xl transition-all border border-white/20 text-xs uppercase tracking-wider"
             >
-              Aproveitar Ofertas
+              Ofertas Imperdíveis
             </button>
           </div>
         </div>
       </div>
 
       {/* 2. Categorias Principais */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-2xl font-black text-white tracking-tight">
-            Categorias Principais
+      <div className="space-y-5">
+        <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+          <h3 className="text-xl sm:text-2xl font-black text-gray-800 tracking-tight">
+            Categorias em Destaque
           </h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -110,30 +110,30 @@ export default function HomeView({
               <div
                 key={cat.id}
                 onClick={() => setActiveTab(cat.id)}
-                className="group relative bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all duration-300 h-44 flex flex-col justify-between"
+                className="group relative bg-white border border-gray-200 rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition-all duration-300 h-40 flex flex-col justify-between"
               >
-                {/* Background image & overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent z-10" />
+                {/* Background image & gradient fade */}
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-950/70 via-gray-900/25 to-transparent z-10" />
                 <img
                   src={cat.image}
                   alt={cat.title}
-                  className="absolute inset-0 w-full h-full object-cover object-center opacity-30 group-hover:scale-105 transition-transform duration-500"
+                  className="absolute inset-0 w-full h-full object-cover object-center opacity-85 group-hover:scale-105 transition-transform duration-500"
                 />
 
                 {/* Content */}
-                <div className="p-6 relative z-20 flex flex-col justify-between h-full">
-                  <div className={`p-2.5 rounded-xl bg-gradient-to-br ${cat.color} text-white w-fit shadow-md`}>
-                    <Icon className="w-5 h-5" />
+                <div className="p-5 relative z-20 flex flex-col justify-between h-full">
+                  <div className={`p-2 rounded-xl ${cat.color} text-white w-fit shadow-md`}>
+                    <Icon className="w-4.5 h-4.5" />
                   </div>
-                  <div className="flex items-end justify-between gap-4 mt-6">
-                    <div>
-                      <h4 className="font-extrabold text-xl text-white tracking-tight leading-none">
+                  <div className="flex items-end justify-between gap-4">
+                    <div className="text-white">
+                      <h4 className="font-extrabold text-lg tracking-tight leading-none">
                         {cat.title}
                       </h4>
-                      <p className="text-xs text-gray-400 mt-1">{cat.desc}</p>
+                      <p className="text-[10px] text-gray-200 mt-1 leading-none font-bold">{cat.desc}</p>
                     </div>
-                    <div className="bg-slate-800 p-2 rounded-lg text-white group-hover:bg-blue-600 transition-colors">
-                      <ChevronRight className="w-4 h-4" />
+                    <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg text-white group-hover:bg-[#0086ff] transition-all">
+                      <ChevronRight className="w-4 h-4 stroke-[3]" />
                     </div>
                   </div>
                 </div>
@@ -144,31 +144,31 @@ export default function HomeView({
       </div>
 
       {/* 3. Produtos em Destaque */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between border-b border-gray-200 pb-2">
           <div>
-            <h3 className="text-2xl font-black text-white tracking-tight">
-              Produtos em Destaque
+            <h3 className="text-xl sm:text-2xl font-black text-gray-800 tracking-tight">
+              Ofertas Recomendadas
             </h3>
-            <p className="text-xs text-gray-400">Os itens mais vendidos e recomendados da TECHNOVA</p>
+            <p className="text-xs text-gray-400 mt-0.5">Os produtos mais buscados e com os melhores descontos do dia</p>
           </div>
           <button
-            onClick={() => setActiveTab("lancamentos")}
-            className="text-sm font-bold text-blue-500 hover:text-blue-400 flex items-center gap-1 transition-colors"
+            onClick={() => setActiveTab("todos" as any)}
+            className="text-xs font-black text-[#0086ff] hover:text-[#0077e6] flex items-center gap-1 transition-colors uppercase tracking-wider"
           >
-            Ver tudo <ChevronRight className="w-4 h-4" />
+            Ver Catálogo <ChevronRight className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-            <p className="text-sm text-gray-400">Buscando as melhores ofertas reais no Google...</p>
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#0086ff]"></div>
+            <p className="text-xs text-gray-400 font-bold">Carregando estoque real da loja...</p>
           </div>
         ) : featured.length === 0 ? (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center flex flex-col items-center gap-3">
-            <AlertCircle className="w-10 h-10 text-gray-500" />
-            <p className="text-gray-400 font-medium">Nenhum produto em destaque disponível no momento.</p>
+          <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center flex flex-col items-center gap-3">
+            <AlertCircle className="w-10 h-10 text-gray-300" />
+            <p className="text-gray-400 text-xs font-bold">Nenhum produto em destaque disponível no momento.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

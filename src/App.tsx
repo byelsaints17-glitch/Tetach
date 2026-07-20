@@ -29,33 +29,20 @@ export default function App() {
   const fetchProducts = async (query = "", category = "todos") => {
     setIsLoading(true);
 
-    // If there is no search query, always use the local storage database as the absolute source of truth
-    // so any edits, additions, and deletions made by the administrator persist 100% reliably.
-    if (!query) {
-      setProducts(filterLocalProducts("", category));
-      setIsLoading(false);
-      return;
-    }
-
-    // If there is a search query, fetch from the server to leverage the backend's Gemini grounding/search
     let loaded = false;
     try {
       const url = `/api/products?category=${category}&q=${encodeURIComponent(query)}`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
-        const localMatches = filterLocalProducts(query, category);
-        const combined = [...localMatches];
-        data.forEach((serverProd: Product) => {
-          if (!combined.some(p => p.name.toLowerCase() === serverProd.name.toLowerCase() || p.id === serverProd.id)) {
-            combined.push(serverProd);
-          }
-        });
-        setProducts(combined);
+        setProducts(data);
+        if (data && data.length > 0 && !query && (category === "todos" || category === "inicio")) {
+          localStorage.setItem("technova_products_db", JSON.stringify(data));
+        }
         loaded = true;
       }
     } catch (err) {
-      console.error("Error fetching products:", err);
+      console.error("Error fetching products from server, falling back to localDb:", err);
     }
 
     if (!loaded) {
@@ -133,11 +120,23 @@ export default function App() {
       const params = new URLSearchParams(window.location.search);
       const productId = params.get("p") || params.get("produto") || params.get("product");
       if (productId) {
-        const localProds = getLocalProducts();
-        const found = localProds.find(p => p.id === productId);
-        if (found) {
-          setSelectedProduct(found);
-        }
+        // Fetch from API to get up-to-date data (and support custom database products on Vercel)
+        fetch(`/api/products/${productId}`)
+          .then(res => {
+            if (res.ok) return res.json();
+            throw new Error("Product not found on server");
+          })
+          .then(prod => {
+            setSelectedProduct(prod);
+          })
+          .catch(err => {
+            console.warn("Could not load product from API, falling back to local DB:", err);
+            const localProds = getLocalProducts();
+            const found = localProds.find(p => p.id === productId);
+            if (found) {
+              setSelectedProduct(found);
+            }
+          });
       }
     }
   }, []);
@@ -148,13 +147,24 @@ export default function App() {
       const params = new URLSearchParams(window.location.search);
       const productId = params.get("p") || params.get("produto") || params.get("product");
       if (productId) {
-        const localProds = getLocalProducts();
-        const found = localProds.find(p => p.id === productId);
-        if (found) {
-          setSelectedProduct(found);
-        } else {
-          setSelectedProduct(null);
-        }
+        fetch(`/api/products/${productId}`)
+          .then(res => {
+            if (res.ok) return res.json();
+            throw new Error("Product not found on server");
+          })
+          .then(prod => {
+            setSelectedProduct(prod);
+          })
+          .catch(err => {
+            console.warn("Could not load product from API popstate, falling back to local DB:", err);
+            const localProds = getLocalProducts();
+            const found = localProds.find(p => p.id === productId);
+            if (found) {
+              setSelectedProduct(found);
+            } else {
+              setSelectedProduct(null);
+            }
+          });
       } else {
         setSelectedProduct(null);
       }
@@ -303,7 +313,7 @@ export default function App() {
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col font-sans select-none selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#f4f6f9] text-slate-800 flex flex-col font-sans select-none selection:bg-[#0086ff]/20">
       {/* Header */}
       <Header
         activeTab={activeTab}
@@ -341,6 +351,8 @@ export default function App() {
             product={selectedProduct}
             onClose={() => setSelectedProduct(null)}
             onAddToCart={handleAddToCart}
+            allProducts={products}
+            onViewProduct={(p) => setSelectedProduct(p)}
           />
         ) : (
           <>
@@ -392,7 +404,12 @@ export default function App() {
         )}
 
         {activeTab === "pedidos" && (
-          <OrdersTrackingView orders={orders} setActiveTab={setActiveTab} />
+          <OrdersTrackingView 
+            orders={orders} 
+            products={products}
+            setActiveTab={setActiveTab} 
+            onViewProduct={setSelectedProduct} 
+          />
         )}
 
         {activeTab === "conta" && <MyAccountView />}

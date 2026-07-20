@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
 
@@ -82,6 +83,113 @@ interface Product {
   images?: string[];
   stock: number;
   warranty: string;
+}
+
+// Initialize Supabase Client
+const supabaseUrl = process.env.SUPABASE_URL || "https://pukncugekjpkabfenjbv.supabase.co";
+const supabaseKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "";
+
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
+if (supabase) {
+  console.log(`[Supabase] Client configured with URL: ${supabaseUrl}`);
+} else {
+  console.warn("[Supabase] Configuration is missing. Running in local memory fallback mode.");
+}
+
+let lastSupabaseError: string | null = null;
+let isSupabaseTableMissing = false;
+
+async function getProductsFromSupabase(): Promise<Product[] | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
+    
+    if (error) {
+      lastSupabaseError = error.message;
+      const lowerErr = error.message.toLowerCase();
+      if (
+        lowerErr.includes("relation") && lowerErr.includes("does not exist") || 
+        lowerErr.includes("could not find the table") ||
+        lowerErr.includes("schema cache")
+      ) {
+        isSupabaseTableMissing = true;
+        console.warn("\n========================================================");
+        console.warn("⚠️  TABELA 'products' NÃO ENCONTRADA NO SUPABASE!");
+        console.warn("Por favor, execute o seguinte comando SQL no editor do Supabase:");
+        console.warn(`
+CREATE TABLE products (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  brand TEXT,
+  model TEXT,
+  description TEXT,
+  price NUMERIC NOT NULL,
+  "originalPrice" NUMERIC,
+  category TEXT,
+  specs JSONB,
+  rating NUMERIC,
+  "imageUrl" TEXT,
+  images JSONB,
+  stock INTEGER,
+  warranty TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+        `);
+        console.warn("========================================================\n");
+      } else {
+        console.error("[Supabase] Error fetching products:", error.message);
+      }
+      return null;
+    }
+    // Success! Clear error tracking
+    lastSupabaseError = null;
+    isSupabaseTableMissing = false;
+    return data as Product[];
+  } catch (err: any) {
+    const errMsg = err.message || String(err);
+    lastSupabaseError = errMsg;
+    if (errMsg.toLowerCase().includes("relation") || errMsg.toLowerCase().includes("table") || errMsg.toLowerCase().includes("schema cache")) {
+      isSupabaseTableMissing = true;
+    }
+    console.error("[Supabase] Failed to fetch products:", errMsg);
+    return null;
+  }
+}
+
+async function seedSupabaseProducts(defaultProducts: Product[]) {
+  if (!supabase) return;
+  try {
+    console.log(`[Supabase] Seeding ${defaultProducts.length} default products to Supabase...`);
+    const itemsToInsert = defaultProducts.map(p => ({
+      id: p.id,
+      name: p.name,
+      brand: p.brand,
+      model: p.model,
+      description: p.description,
+      price: Number(p.price),
+      originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
+      category: p.category,
+      specs: p.specs,
+      rating: p.rating,
+      imageUrl: p.imageUrl,
+      images: p.images || [p.imageUrl],
+      stock: p.stock,
+      warranty: p.warranty
+    }));
+
+    const { error } = await supabase.from("products").insert(itemsToInsert);
+    if (error) {
+      console.error("[Supabase] Failed to seed default products:", error.message);
+    } else {
+      console.log("[Supabase] Default products successfully seeded to Supabase!");
+    }
+  } catch (err: any) {
+    console.error("[Supabase] Exception during seeding:", err.message || err);
+  }
 }
 
 let productsDb: Product[] = [
@@ -384,6 +492,23 @@ app.get("/api/products", async (req, res) => {
   const minRating = req.query.minRating ? parseFloat(req.query.minRating as string) : undefined;
   const availability = req.query.availability as string | undefined;
 
+  // Sync with Supabase on every request to ensure Vercel / other instances are perfectly up to date
+  if (supabase) {
+    const supabaseData = await getProductsFromSupabase();
+    if (supabaseData) {
+      if (supabaseData.length > 0) {
+        productsDb = supabaseData;
+      } else {
+        // Table exists but is empty, seed it!
+        await seedSupabaseProducts(productsDb);
+        const reFetched = await getProductsFromSupabase();
+        if (reFetched && reFetched.length > 0) {
+          productsDb = reFetched;
+        }
+      }
+    }
+  }
+
   console.log(`Searching products with params: query="${query || ""}", category="${category || ""}", brand="${brand || ""}"`);
 
   // If Gemini is active AND a specific query is passed, we can try to find REAL dynamic search grounding data!
@@ -487,14 +612,23 @@ Atenção: Use URLs de imagem genéricas e estáveis de Unsplash que corresponda
 });
 
 // GET single product by ID
-app.get("/api/products/:id", (req, res) => {
+app.get("/api/products/:id", async (req, res) => {
   const { id } = req.params;
+
+  if (supabase) {
+    const supabaseData = await getProductsFromSupabase();
+    if (supabaseData && supabaseData.length > 0) {
+      productsDb = supabaseData;
+    }
+  }
+
   const product = productsDb.find(p => p.id === id);
   if (product) {
     return res.json(product);
   }
   return res.status(404).json({ error: "Produto não encontrado." });
 });
+
 
 // ----------------------------------------------------
 // ORDERS IN-MEMORY DATABASE
@@ -588,12 +722,18 @@ let ordersDb: any[] = [
 // ----------------------------------------------------
 
 // GET Admin products
-app.get("/api/admin/products", (req, res) => {
+app.get("/api/admin/products", async (req, res) => {
+  if (supabase) {
+    const supabaseData = await getProductsFromSupabase();
+    if (supabaseData && supabaseData.length > 0) {
+      productsDb = supabaseData;
+    }
+  }
   return res.json(productsDb);
 });
 
 // POST register new product
-app.post("/api/admin/products", (req, res) => {
+app.post("/api/admin/products", async (req, res) => {
   const { name, brand, model, description, price, originalPrice, category, specs, rating, imageUrl, images, stock, warranty } = req.body;
 
   if (!name || !brand || !model || !description || price === undefined || !category || !imageUrl || stock === undefined) {
@@ -617,12 +757,25 @@ app.post("/api/admin/products", (req, res) => {
     warranty: warranty || "1 ano"
   };
 
+  if (supabase) {
+    try {
+      const { error } = await supabase.from("products").insert([newProduct]);
+      if (error) {
+        console.error("[Supabase] Error inserting product:", error.message);
+      } else {
+        console.log("[Supabase] Product successfully inserted in Supabase:", newProduct.id);
+      }
+    } catch (e: any) {
+      console.error("[Supabase] Insert exception:", e.message || e);
+    }
+  }
+
   productsDb.unshift(newProduct);
   return res.status(201).json(newProduct);
 });
 
 // PUT update existing product
-app.put("/api/admin/products/:id", (req, res) => {
+app.put("/api/admin/products/:id", async (req, res) => {
   const { id } = req.params;
   const index = productsDb.findIndex(p => p.id === id);
 
@@ -632,7 +785,7 @@ app.put("/api/admin/products/:id", (req, res) => {
 
   const { name, brand, model, description, price, originalPrice, category, specs, rating, imageUrl, images, stock, warranty } = req.body;
 
-  productsDb[index] = {
+  const updatedProduct: Product = {
     ...productsDb[index],
     name: name || productsDb[index].name,
     brand: brand || productsDb[index].brand,
@@ -649,11 +802,40 @@ app.put("/api/admin/products/:id", (req, res) => {
     warranty: warranty || productsDb[index].warranty
   };
 
+  if (supabase) {
+    try {
+      const { error } = await supabase.from("products").update({
+        name: updatedProduct.name,
+        brand: updatedProduct.brand,
+        model: updatedProduct.model,
+        description: updatedProduct.description,
+        price: updatedProduct.price,
+        originalPrice: updatedProduct.originalPrice || null,
+        category: updatedProduct.category,
+        specs: updatedProduct.specs,
+        rating: updatedProduct.rating,
+        imageUrl: updatedProduct.imageUrl,
+        images: updatedProduct.images,
+        stock: updatedProduct.stock,
+        warranty: updatedProduct.warranty
+      }).eq("id", id);
+      
+      if (error) {
+        console.error("[Supabase] Error updating product:", error.message);
+      } else {
+        console.log("[Supabase] Product successfully updated in Supabase:", id);
+      }
+    } catch (e: any) {
+      console.error("[Supabase] Update exception:", e.message || e);
+    }
+  }
+
+  productsDb[index] = updatedProduct;
   return res.json(productsDb[index]);
 });
 
 // DELETE product
-app.delete("/api/admin/products/:id", (req, res) => {
+app.delete("/api/admin/products/:id", async (req, res) => {
   const { id } = req.params;
   const index = productsDb.findIndex(p => p.id === id);
 
@@ -661,9 +843,23 @@ app.delete("/api/admin/products/:id", (req, res) => {
     return res.status(404).json({ error: "Produto não encontrado." });
   }
 
+  if (supabase) {
+    try {
+      const { error } = await supabase.from("products").delete().eq("id", id);
+      if (error) {
+        console.error("[Supabase] Error deleting product:", error.message);
+      } else {
+        console.log("[Supabase] Product successfully deleted from Supabase:", id);
+      }
+    } catch (e: any) {
+      console.error("[Supabase] Delete exception:", e.message || e);
+    }
+  }
+
   const deleted = productsDb.splice(index, 1);
   return res.json({ success: true, deleted: deleted[0] });
 });
+
 
 // ----------------------------------------------------
 // USER ACCOUNTS / CREATORS API
@@ -824,7 +1020,12 @@ app.get("/api/admin/reports", (req, res) => {
     averageTicket,
     lowStockProducts,
     productsByCategory,
-    monthlyComparisonData
+    monthlyComparisonData,
+    supabaseStatus: {
+      configured: !!supabase,
+      error: lastSupabaseError,
+      isTableMissing: isSupabaseTableMissing
+    }
   });
 });
 
