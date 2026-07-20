@@ -13,7 +13,7 @@ import ProductDetailView from "./components/ProductDetailView";
 import AdminDashboard from "./components/AdminDashboard";
 import CompanyInfoView from "./components/CompanyInfoView";
 import { ShieldCheck, Truck, RotateCcw, Calendar, ShoppingCart, Info, Check } from "lucide-react";
-import { filterLocalProducts } from "./utils/localDb";
+import { filterLocalProducts, getLocalProducts } from "./utils/localDb";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("inicio");
@@ -125,10 +125,77 @@ export default function App() {
     }
   }, []);
 
-  // Scroll to top smoothly on page/tab changes and close product detail page
+  const [isFirstRender, setIsFirstRender] = useState(true);
+
+  // Check URL parameters on mount to load a specific product directly (Deep Linking)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get("p") || params.get("produto") || params.get("product");
+      if (productId) {
+        const localProds = getLocalProducts();
+        const found = localProds.find(p => p.id === productId);
+        if (found) {
+          setSelectedProduct(found);
+        }
+      }
+    }
+  }, []);
+
+  // Listen to popstate (browser back/forward buttons) to synchronize with URL product ID
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get("p") || params.get("produto") || params.get("product");
+      if (productId) {
+        const localProds = getLocalProducts();
+        const found = localProds.find(p => p.id === productId);
+        if (found) {
+          setSelectedProduct(found);
+        } else {
+          setSelectedProduct(null);
+        }
+      } else {
+        setSelectedProduct(null);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // Update URL search parameters when selectedProduct changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const currentParamId = params.get("p") || params.get("produto") || params.get("product");
+      
+      if (selectedProduct) {
+        if (currentParamId !== selectedProduct.id) {
+          const newUrl = `${window.location.pathname}?p=${selectedProduct.id}`;
+          window.history.pushState({ p: selectedProduct.id }, "", newUrl);
+        }
+      } else {
+        if (currentParamId) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("p");
+          url.searchParams.delete("produto");
+          url.searchParams.delete("product");
+          const newUrl = url.search.trim() ? `${window.location.pathname}${url.search}` : window.location.pathname;
+          window.history.pushState({}, "", newUrl);
+        }
+      }
+    }
+  }, [selectedProduct]);
+
+  // Scroll to top smoothly on page/tab changes and close product detail page unless it's initial render
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    setSelectedProduct(null);
+    if (isFirstRender) {
+      setIsFirstRender(false);
+    } else {
+      setSelectedProduct(null);
+    }
   }, [activeTab]);
 
   // Scroll to top smoothly on product details select

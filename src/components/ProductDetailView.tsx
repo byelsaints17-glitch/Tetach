@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Star, ShoppingCart, Check, ArrowLeft, Shield, Truck, RefreshCw } from "lucide-react";
+import { Star, ShoppingCart, Check, ArrowLeft, Shield, Truck, RefreshCw, Share2 } from "lucide-react";
 import { Product } from "../types";
 
 interface ProductDetailViewProps {
@@ -14,18 +14,47 @@ export default function ProductDetailView({ product, onClose, onAddToCart }: Pro
     : [product.imageUrl];
   
   const [activeImage, setActiveImage] = useState(product.imageUrl || imagesList[0]);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = () => {
+    if (typeof window !== "undefined") {
+      const shareUrl = `${window.location.origin}${window.location.pathname}?p=${product.id}`;
+      navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      {/* Back Button */}
+      {/* Back Button and Share Button */}
       <div className="flex items-center justify-between">
-        <button
-          onClick={onClose}
-          className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-gray-300 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Voltar para a Loja
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onClose}
+            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-gray-300 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para a Loja
+          </button>
+          
+          <button
+            onClick={handleShare}
+            className="inline-flex items-center gap-2 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                Link Copiado!
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5" />
+                Compartilhar Produto
+              </>
+            )}
+          </button>
+        </div>
         <span className="text-xs font-mono text-gray-500">REF: {product.id}</span>
       </div>
 

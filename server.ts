@@ -486,6 +486,16 @@ Atenção: Use URLs de imagem genéricas e estáveis de Unsplash que corresponda
   return res.json(results);
 });
 
+// GET single product by ID
+app.get("/api/products/:id", (req, res) => {
+  const { id } = req.params;
+  const product = productsDb.find(p => p.id === id);
+  if (product) {
+    return res.json(product);
+  }
+  return res.status(404).json({ error: "Produto não encontrado." });
+});
+
 // ----------------------------------------------------
 // ORDERS IN-MEMORY DATABASE
 // ----------------------------------------------------
